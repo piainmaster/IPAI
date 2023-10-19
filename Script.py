@@ -48,10 +48,12 @@ def classify_images(X, method):
 # Step 4: Evaluate the method
 def evaluate_method(y_true, y_pred):
     accuracy = accuracy_score(y_true, y_pred)
+    #todo: add other measures for evaluation
     return accuracy
 
 
 # Step 5: Combine methods
+#todo: not for now, do this later when everything works already
 def combine_methods(X, methods):
     X_combined = []
     for img in X:
@@ -72,7 +74,7 @@ def combine_methods(X, methods):
 
 # Step 6: Main script
 if __name__ == '__main__':
-    tar_filename = 'dataset.tar'  # Replace with the actual dataset filename
+    tar_filename = 'dataset.tar'  #Todo: Replace with the actual dataset filename
     data_dir = 'dataset'  # Directory where the dataset is extracted
     extract_dataset(tar_filename, data_dir)
 
@@ -92,9 +94,9 @@ if __name__ == '__main__':
         print(f"{method} accuracy: {accuracy:.2f}")
 
     # Combine methods
-    combined_methods = ['histograms', 'variance', 'entropy']
-    X_train_combined = combine_methods(X_train, combined_methods)
-    X_test_combined = combine_methods(X_test, combined_methods)
+    #combined_methods = ['histograms', 'variance', 'entropy']
+    #X_train_combined = combine_methods(X_train, combined_methods)
+    #X_test_combined = combine_methods(X_test, combined_methods)
 
     # Train a classifier and predict
     # classifier.fit(X_train_combined, y_train)
