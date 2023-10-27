@@ -1,36 +1,39 @@
 import os
-import tarfile
 import numpy as np
 import cv2
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
-from skimage.feature import greycomatrix, greycoprops
-from scipy.stats import entropy
-from PIL import Image
 
 
-# Step 1: Extract the dataset from the .tar file
-def extract_dataset(tar_filename, extract_path):
-    with tarfile.open(tar_filename, 'r') as tar:
-        tar.extractall(extract_path)
+#-----------------------------------------------------------------------
+#VARIANCES: DATA IMPORT AND PREPARATION
+#-----------------------------------------------------------------------
 
+# Define the path to the dataset
+dataset_path = "dataset_cats_and_dogs"
 
-# Step 2: Load and split the dataset into training and testing sets
-def load_and_split_dataset(data_dir, test_size=0.2):
-    file_list = os.listdir(data_dir)
-    labels = [1 if 'real' in f else 0 for f in file_list]
-
-    X = []
-    for file in file_list:
-        img = cv2.imread(os.path.join(data_dir, file))
+# Load, convert to greyscale and resize images
+X, y = [], []
+for category in ["cats", "dogs"]:
+    category_folder = dataset_path + "/" + category
+    for filename in os.listdir(category_folder):
+        img = cv2.imread(category_folder + "/" + filename)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # Convert to grayscale
+        img = cv2.resize(img, (100, 100))  # Resize the image to a fixed size
         X.append(img)
+        y.append(category)
 
-    X = np.array(X)
-    X_train, X_test, y_train, y_test = train_test_split(X, labels, test_size=test_size, random_state=42)
-
-    return X_train, X_test, y_train, y_test
+print(X)
+print(y)
 
 
+# Split the data into train and test sets (80% train, 20% test)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+
+
+
+"""
 # Step 3: Feature extraction and classification methods
 def classify_images(X, method):
     if method == 'histograms':
@@ -104,3 +107,4 @@ if __name__ == '__main__':
 
     accuracy_combined = evaluate_method(y_test, y_pred_combined)
     print(f"Combined methods accuracy: {accuracy_combined:.2f}")
+"""
