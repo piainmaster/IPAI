@@ -10,18 +10,19 @@ from sklearn.metrics import accuracy_score
 #-----------------------------------------------------------------------
 
 # Define the path to the dataset
-dataset_path = "dataset_cats_and_dogs"
+dataset_path = "dataset"
 
 # Load, convert to greyscale and resize images
 X, y = [], []
-for category in ["cats", "dogs"]:
-    category_folder = dataset_path + "/" + category
-    for filename in os.listdir(category_folder):
-        img = cv2.imread(category_folder + "/" + filename)
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # Convert to grayscale
-        img = cv2.resize(img, (100, 100))  # Resize the image to a fixed size
-        X.append(img)
-        y.append(category)
+for datasource in ["PLUS", "PROTECT", "SCUT", "VERA"]:
+    datasource_folder = dataset_path + "/" + datasource
+    for category in ["genuine", "spoofed"]:
+        category_folder = datasource_folder + "/" + category
+        for filename in os.listdir(category_folder):
+            img = cv2.imread(category_folder + "/" + filename)
+            #img = cv2.resize(img, (100, 100))  # Resize the image to a fixed size
+            X.append(img)       #todo: if no further operations on image, imread can be conducted here
+            y.append(category)
 
 print(X)
 print(y)
