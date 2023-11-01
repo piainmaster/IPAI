@@ -31,7 +31,50 @@ print(y)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 
+#-----------------------------------------------------------------------
+#VARIANCES: GLOBAL VARIANCE
+#-----------------------------------------------------------------------
 
+# Initialize lists to store variances of cat and dog images
+train_cat_variances = []
+train_dog_variances = []
+
+# Loop over test data and calculate variances
+for image, category in zip(X_test, y_test):
+    variance = np.var(image)
+    if category == "cats":
+        train_cat_variances.append(variance)
+    elif category == "dogs":
+        train_dog_variances.append(variance)
+
+
+# Calculate the mean variances for cat and dog images
+train_mean_cats = np.mean(train_cat_variances)
+train_mean_dogs = np.mean(train_dog_variances)
+print("Mean Variance cats: ", train_mean_cats)
+print("Mean Variance dogs: ", train_mean_dogs)
+
+# Initialize lists to store predicted categories
+predicted_categories = []
+
+# Classify each train data point based on variance
+for image in X_train:
+    variance = np.var(image)
+
+    # Calculate the absolute differences between the variance and the mean variances
+    diff_to_cats = abs(variance - train_mean_cats)
+    diff_to_dogs = abs(variance - train_mean_dogs)
+
+    if diff_to_cats < diff_to_dogs:
+        predicted_categories.append("cats")
+        #print(f"Train Image has variance {variance}. \n Therefore classified as Cat \n Actual classification: {category}")
+    else:
+        predicted_categories.append("dogs")
+        #print(f"Train Image has variance {variance}. \n Therefore classified as Dog \n Actual classification: {category}")
+
+# Calculate accuracy
+accuracy = accuracy_score(y_train, predicted_categories)
+print("Accuracy: {:.2f}".format(accuracy))
 
 """
 # Step 3: Feature extraction and classification methods
