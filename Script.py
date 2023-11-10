@@ -1,9 +1,11 @@
 import os
+from itertools import count
+
 import numpy as np
 import cv2
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
-
+from sklearn.neighbors import KNeighborsClassifier
 
 #-----------------------------------------------------------------------
 #VARIANCES: DATA IMPORT AND PREPARATION
@@ -14,7 +16,7 @@ dataset_path = "dataset"
 
 # Load, convert to greyscale and resize images
 X, y = [], []
-for datasource in ["PLUS", "PROTECT", "SCUT", "VERA"]:
+for datasource in ["PLUS"]:         #, "PROTECT", "SCUT", "VERA"
     datasource_folder = dataset_path + "/" + datasource
     for category in ["genuine", "spoofed"]:
         category_folder = datasource_folder + "/" + category
@@ -24,131 +26,56 @@ for datasource in ["PLUS", "PROTECT", "SCUT", "VERA"]:
             X.append(img)       #todo: if no further operations on image, imread can be conducted here
             y.append(category)
 
-print(X)
-print(y)
-
 
 # Split the data into train and test sets (80% train, 20% test)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)   #todo: am Ende random_state diskutieren
 
+
+#-----------------------------------------------------------------------
+#KNN PARAMS
+#-----------------------------------------------------------------------
+"""
+KNeighborsClassifier(
+n_neighbors=5, -> number of neighbors, must be an uneven number *,
+weights='uniform', -> all neighbors have the same weigth
+algorithm='auto', -> Algorithm used to compute the nearest neighbors; todo: try out different one's at the very end
+leaf_size=30, -> only necessary if algorithm is BallTree or KDTree
+p=2, -> 1 = manhattan_distance (l1), 2 = euclidean_distance (l2) for p = 2. For arbitrary p, minkowski_distance (l_p) is used.; todo: try out different one's at the very end
+metric='minkowski', -> used metric
+metric_params=None, -> dependend on used metric 
+n_jobs=None)[source]¶
+"""
 
 #-----------------------------------------------------------------------
 #VARIANCES: GLOBAL VARIANCE
 #-----------------------------------------------------------------------
 
-# Initialize lists to store variances of cat and dog images
-train_cat_variances = []
-train_dog_variances = []
+X_train_global_variance = []
 
+# Loop over training data and calculate variances
+for image in X_train:
+    variance = [np.var(image)]
+    X_train_global_variance.append(variance)
+
+
+neigh = KNeighborsClassifier(n_neighbors=3)
+neigh.fit(X_train_global_variance, y_train)
+
+X_test_global_variance = []
 # Loop over test data and calculate variances
-for image, category in zip(X_test, y_test):
-    variance = np.var(image)
-    if category == "cats":
-        train_cat_variances.append(variance)
-    elif category == "dogs":
-        train_dog_variances.append(variance)
-
-
-# Calculate the mean variances for cat and dog images
-train_mean_cats = np.mean(train_cat_variances)
-train_mean_dogs = np.mean(train_dog_variances)
-print("Mean Variance cats: ", train_mean_cats)
-print("Mean Variance dogs: ", train_mean_dogs)
+for image in X_test:
+    variance = [np.var(image)]
+    X_test_global_variance.append(variance)
 
 # Initialize lists to store predicted categories
-predicted_categories = []
-
-# Classify each train data point based on variance
-for image in X_train:
-    variance = np.var(image)
-
-    # Calculate the absolute differences between the variance and the mean variances
-    diff_to_cats = abs(variance - train_mean_cats)
-    diff_to_dogs = abs(variance - train_mean_dogs)
-
-    if diff_to_cats < diff_to_dogs:
-        predicted_categories.append("cats")
-        #print(f"Train Image has variance {variance}. \n Therefore classified as Cat \n Actual classification: {category}")
-    else:
-        predicted_categories.append("dogs")
-        #print(f"Train Image has variance {variance}. \n Therefore classified as Dog \n Actual classification: {category}")
+predicted_categories = neigh.predict(X_test_global_variance)
 
 # Calculate accuracy
-accuracy = accuracy_score(y_train, predicted_categories)
+accuracy = accuracy_score(y_test, predicted_categories)
 print("Accuracy: {:.2f}".format(accuracy))
 
-"""
-# Step 3: Feature extraction and classification methods
-def classify_images(X, method):
-    if method == 'histograms':
-        X_features = [cv2.calcHist([img], [0, 1, 2], None, [256, 256, 256]).flatten() for img in X]
-    elif method == 'variance':
-        X_features = [np.var(img) for img in X]
-    elif method == 'entropy':
-        X_features = [entropy(np.histogram(img, bins=256)[0]) for img in X]
-    else:
-        raise ValueError("Invalid method")
 
-    return X_features
+#-----------------------------------------------------------------------
+#VARIANCES: LOCAL VARIANCE
+#-----------------------------------------------------------------------
 
-
-# Step 4: Evaluate the method
-def evaluate_method(y_true, y_pred):
-    accuracy = accuracy_score(y_true, y_pred)
-    #todo: add other measures for evaluation
-    return accuracy
-
-
-# Step 5: Combine methods
-#todo: not for now, do this later when everything works already
-def combine_methods(X, methods):
-    X_combined = []
-    for img in X:
-        features = []
-        if 'histograms' in methods:
-            hist = cv2.calcHist([img], [0, 1, 2], None, [256, 256, 256]).flatten()
-            features.extend(hist)
-        if 'variance' in methods:
-            variance = np.var(img)
-            features.append(variance)
-        if 'entropy' in methods:
-            entropy_value = entropy(np.histogram(img, bins=256)[0])
-            features.append(entropy_value)
-        X_combined.append(features)
-
-    return X_combined
-
-
-# Step 6: Main script
-if __name__ == '__main__':
-    tar_filename = 'dataset.tar'  #Todo: Replace with the actual dataset filename
-    data_dir = 'dataset'  # Directory where the dataset is extracted
-    extract_dataset(tar_filename, data_dir)
-
-    X_train, X_test, y_train, y_test = load_and_split_dataset(data_dir)
-
-    methods = ['histograms', 'variance', 'entropy']
-    for method in methods:
-        X_train_features = classify_images(X_train, method)
-        X_test_features = classify_images(X_test, method)
-
-        # Train a classifier (e.g., Random Forest) and predict
-        # Replace this with your choice of classifier
-        # classifier.fit(X_train_features, y_train)
-        # y_pred = classifier.predict(X_test_features)
-
-        accuracy = evaluate_method(y_test, y_pred)
-        print(f"{method} accuracy: {accuracy:.2f}")
-
-    # Combine methods
-    #combined_methods = ['histograms', 'variance', 'entropy']
-    #X_train_combined = combine_methods(X_train, combined_methods)
-    #X_test_combined = combine_methods(X_test, combined_methods)
-
-    # Train a classifier and predict
-    # classifier.fit(X_train_combined, y_train)
-    # y_pred_combined = classifier.predict(X_test_combined)
-
-    accuracy_combined = evaluate_method(y_test, y_pred_combined)
-    print(f"Combined methods accuracy: {accuracy_combined:.2f}")
-"""
