@@ -76,6 +76,54 @@ print("Accuracy: {:.2f}".format(accuracy))
 
 
 #-----------------------------------------------------------------------
-#VARIANCES: LOCAL VARIANCE
+#VARIANCES:PATCH VARIANCE (NO OVERLAP)
 #-----------------------------------------------------------------------
+
+#Function to calculate variance for image patches
+def calculate_patch_variances(lv_image,lv_num_rows,lv_num_cols):
+    patch_height = lv_image.shape[0]//lv_num_rows           #round down
+    patch_width = lv_image.shape[1]//lv_num_cols            #round down
+    variances=[]
+
+    for i in range (lv_num_rows):
+        for j in range (lv_num_cols):
+            patch = lv_image[i*patch_height:(i+1)*patch_height,j*patch_width:(j+1)*patch_width]
+            variances.append(np.var(patch))
+
+    return variances
+
+
+#Classify each train data point based on patch variances
+#todo:fine-tuning of the patch sizes
+num_rows = 4        #Number of which the rows are divided through
+num_cols = 4        #Number of which the columns are divided through
+
+
+# Loop over training data and calculate variances
+X_train_patch_variance = []
+for image in X_train:
+    patch_variances = calculate_patch_variances(lv_image=image, lv_num_rows=num_rows, lv_num_cols=num_cols)
+    X_train_patch_variance.append(patch_variances)
+
+
+neigh_patch_variance = KNeighborsClassifier(n_neighbors=3)
+neigh_patch_variance.fit(X_train_patch_variance, y_train)
+
+
+#Classify each train data point based on patch variances
+X_test_patch_variance = []
+
+for image in X_test:
+    patch_variances = calculate_patch_variances(lv_image=image, lv_num_rows=num_rows, lv_num_cols=num_cols)
+    X_test_patch_variance.append(patch_variances)
+
+print("X_test_patch_variance: " + str(X_test_patch_variance))
+
+# Initialize lists to store predicted categories
+predicted_categories_patch_variance = neigh.predict(X_test_patch_variance)
+
+
+#Calculate accuracy
+accuracy = accuracy_score(y_test, predicted_categories_patch_variance)
+print("Accuracy with Patch Variances: {:.2f}".format(accuracy))
 
