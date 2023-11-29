@@ -128,11 +128,30 @@ def sum_manhattan_distance_test(hist1, hist2):
     ma_dist = sum
     return ma_dist
 
+# Bild statt Histogramm wird übergeben
 def earth_movers_distance_test(img1, img2):
     images = [img.ravel() for img in [img1, img2]]
     em_distance = wasserstein_distance(images[0], images[1])
     return em_distance
 
+"""
+# mit selbst programmierten knn code
+conclusion_list1 # bereits sortiert für methode 1
+conclusion_list2 # bereits sortiert für methode 2
+knn_list1 = list()
+knn_list2 = list()
+k # die k-Foulds
+for i in range(k):
+    knn_list1.append(conclusion_list1[i][0]) #die ersten k werte anfügen
+    knn_list2.append(conclusion_list2[i][0])
+fdist1 = dict(zip(*np.unique(knn_list1, return_counts=True)))
+fdist2 = dict(zip(*np.unique(knn_list2, return_counts=True)))
+pred = list() # predictions list
+pred.append(list(fdist1)[-1])
+pred.append(list(fdist2)[-1])
+final = dict(zip(*np.unique(pred, return_counts=True)))
+prediction = list(final)[-1]
+"""
 
 # -----------------------------------------------------------------------
 # ENTROPY
@@ -165,8 +184,34 @@ def calculate_entropies(image, num_frames):
 # -----------------------------------------------------------------------
 # VARIANCE
 # -----------------------------------------------------------------------
+def calculate_variances(image, num_frames):
 
+    image = image[1]
+    # Divide the image into frames
+    variances = []
+    height, width = image.shape
 
+    frame_size = width // num_frames
+
+    for i in range(num_frames):
+        start_x = i * frame_size
+        end_x = (i + 1) * frame_size
+        frame = image[:, start_x:end_x]
+        variance = np.var(frame)
+        variances.append(variance)
+
+    return variances
+
+# Function to calculate patch variances of an image with size patch_x x patch_y
+def calculate_patch_variances(image, patch_x, patch_y):
+    patch_size = (patch_x, patch_y)
+    variances = []
+    h, w = image.shape
+    for i in range(0, h, patch_size[0]):
+        for j in range(0, w, patch_size[1]):
+            patch = image[i:i+patch_size[0], j:j+patch_size[1]]
+            variances.append(np.var(patch))
+    return variances
 
 # -----------------------------------------------------------------------
 # METHODEN-AUFRUFE
@@ -183,7 +228,6 @@ for img in data_PLUS_genuine:
     entropies = calculate_entropies(img, num_frames)
     entropy_list.append(["genuine", entropies])
 
-print("X")
 
 
 
@@ -193,13 +237,22 @@ print("X")
 # LEAVE ONE OUT CROSS VALIDATION
 # -----------------------------------------------------------------------
 
+# data_PLUS_genuine und data_PLUS_003 zusammenführen
+# CONVERT DATA TO NUMPY ARRAY
+
+labels, features, histograms = zip(*current_data)
+features = [cv2.resize(img, (100, 100)) for img in features]
+X = np.array(features)
+y = np.array(labels)
+
+
 
 loo = LeaveOneOut()
 
 correct_predictions = 0
 
-for train_index, test_index in loo.split(images, labels):
-    X_train, X_test = images[train_index], images[test_index]
+for train_index, test_index in loo.split(features, labels):
+    X_train, X_test = features[train_index], features[test_index]
     y_train, y_test = labels[train_index], labels[test_index]
 
     # KNN classifier
