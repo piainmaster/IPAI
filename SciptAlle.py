@@ -1,4 +1,5 @@
 import math
+import random
 
 import numpy as np
 import cv2
@@ -92,6 +93,25 @@ def loadSCUT():
                     data_SCUT_008.append(["synthethic", img, hist])
 
     return data_SCUT_genuine, data_SCUT_spoofed, data_SCUT_007, data_SCUT_008
+
+
+
+# -----------------------------------------------------------------------
+# KNN
+# -----------------------------------------------------------------------
+def knncalc(k, list):
+    knn_list = list()
+    list.sort(key=lambda tup: tup[1]) #nach den Werten in der zweiten Spalte sortieren
+    for i in range(k):
+        knn_list.append(list[i][0]) # es Werten "spoofed" und "genuine" eingetragen
+    fdist = dict(zip(*np.unique(knn_list, return_counts=True)))
+    pred = list(fdist)[-1]
+    return pred
+
+def most_common_value(list):
+    mcv = dict(zip(*np.unique(list, return_counts=True)))
+    pred = list(mcv)[-1]
+    return pred
 
 
 # -----------------------------------------------------------------------
@@ -221,28 +241,23 @@ data_PLUS_genuine, data_PLUS_spoofed, data_PLUS_003, data_PLUS_004 = loadPLUS()
 #data_SCUT_genuine, data_SCUT_spoofed, data_SCUT_007, data_SCUT_008 = loadSCUT()
 
 
-# Calculate entropies for data_PLUS_genuine
-num_frames = 6
-entropy_list = []
-for img in data_PLUS_genuine:
-    entropies = calculate_entropies(img, num_frames)
-    entropy_list.append(["genuine", entropies])
-
-
-
 
 
 
 # -----------------------------------------------------------------------
 # LEAVE ONE OUT CROSS VALIDATION
 # -----------------------------------------------------------------------
+def combine_list_with_genuine(list):
+    current_data = zip(data_PLUS_genuine, list)
+    return random.shuffle(current_data)
 
-# data_PLUS_genuine und data_PLUS_003 zusammenführen
-# CONVERT DATA TO NUMPY ARRAY
+# combine lists data_PLUS_genuine and data_PLUS_003
+current_data = combine_list_with_genuine(data_PLUS_003)
 
-labels, features, histograms = zip(*current_data)
-features = [cv2.resize(img, (100, 100)) for img in features]
-X = np.array(features)
+# convert data to numpy array
+labels, images, histograms = zip(*current_data)
+#features = [cv2.resize(img, (100, 100)) for img in images]
+X = np.array(images)
 y = np.array(labels)
 
 
@@ -251,7 +266,53 @@ loo = LeaveOneOut()
 
 correct_predictions = 0
 
-for train_index, test_index in loo.split(features, labels):
+for train_index, test_index in loo.split(images, histograms, labels):
+
+    # -----------------------------------------------------------------------
+    # VARIANCE
+    # -----------------------------------------------------------------------
+    # calculate feature global variance
+
+    # knn global variance
+
+    # calculate feature patch variance
+
+    # knn patch variance
+
+
+    # -----------------------------------------------------------------------
+    # ENTROPY
+    # -----------------------------------------------------------------------
+    # calculate feature global entropy
+
+    # Calculate entropies for all data
+    num_frames = 1
+    entropy_list = []
+    for img in images, labels:
+        entropies = calculate_entropies(img, num_frames)
+        entropy_list.append([labels, entropies])
+
+    train, test = entropy_list[train_index], entropy_list[test_index]
+
+    # knn global entropy
+
+
+    # calculate feature patch entropy
+
+    # knn patch entropy
+
+
+    # -----------------------------------------------------------------------
+    # HISTOGRAM
+    # -----------------------------------------------------------------------
+    # calculate feature histogram
+
+    # knn histogram
+
+
+
+
+
     X_train, X_test = features[train_index], features[test_index]
     y_train, y_test = labels[train_index], labels[test_index]
 
