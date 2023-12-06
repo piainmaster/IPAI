@@ -247,18 +247,28 @@ data_PLUS_genuine, data_PLUS_spoofed, data_PLUS_003, data_PLUS_004 = loadPLUS()
 # -----------------------------------------------------------------------
 # LEAVE ONE OUT CROSS VALIDATION
 # -----------------------------------------------------------------------
+
 def combine_list_with_genuine(list):
-    current_data = zip(data_PLUS_genuine, list)
-    return random.shuffle(current_data)
+    current_data = data_PLUS_genuine + list
+    return current_data
 
 # combine lists data_PLUS_genuine and data_PLUS_003
+current_data = []
 current_data = combine_list_with_genuine(data_PLUS_003)
 
+
 # convert data to numpy array
-labels, images, histograms = zip(*current_data)
+labels_list, images_list, histograms_list = [], [], []
+for row in current_data:
+    # Append values to respective columns
+    labels_list.append(row[0])
+    images_list.append(row[1])
+    histograms_list.append(row[2])
 #features = [cv2.resize(img, (100, 100)) for img in images]
-X = np.array(images)
-y = np.array(labels)
+labels = np.array(labels_list)
+images = np.array(images_list)
+histograms = np.array(histograms_list)
+
 
 
 
@@ -266,20 +276,7 @@ loo = LeaveOneOut()
 
 correct_predictions = 0
 
-for train_index, test_index in loo.split(images, histograms, labels):
-
-    # -----------------------------------------------------------------------
-    # VARIANCE
-    # -----------------------------------------------------------------------
-    # calculate feature global variance
-
-    # knn global variance
-
-    # calculate feature patch variance
-
-    # knn patch variance
-
-
+for train_index, test_index in loo.split(labels, images, histograms):
     # -----------------------------------------------------------------------
     # ENTROPY
     # -----------------------------------------------------------------------
@@ -301,6 +298,16 @@ for train_index, test_index in loo.split(images, histograms, labels):
 
     # knn patch entropy
 
+    # -----------------------------------------------------------------------
+    # VARIANCE
+    # -----------------------------------------------------------------------
+    # calculate feature global variance
+
+    # knn global variance
+
+    # calculate feature patch variance
+
+    # knn patch variance
 
     # -----------------------------------------------------------------------
     # HISTOGRAM
