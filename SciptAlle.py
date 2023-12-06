@@ -27,11 +27,11 @@ def loadPLUS():
         hist = histBin(img, k)
         data_PLUS_genuine.append(["genuine", img, hist])
 
-    p = Path(datasource_path + "/" + "spoofed")
+    """p = Path(datasource_path + "/" + "spoofed")
     for filename in p.glob('**/*.png'):
         img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
         histBin(img, k)
-        data_PLUS_spoofed.append(["spoofed", img, hist])
+        data_PLUS_spoofed.append(["spoofed", img, hist])"""
 
     for synthethic_category in ["spoofed_synthethic_cyclegan",
                                 "spoofed_synthethic_distancegan",
@@ -43,13 +43,13 @@ def loadPLUS():
                     img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
                     hist = histBin(img, k)
                     data_PLUS_003.append(["synthethic", img, hist])
-        for variant in ["004"]:
+        """for variant in ["004"]:
             for fold in ["1", "2", "3", "4", "5"]:
                 p = Path(datasource_path + "/" + synthethic_category + "/" + variant + "/" + fold)
                 for filename in p.glob('**/*.png'):
                     img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
                     hist = histBin(img, k)
-                    data_PLUS_004.append(["synthethic", img, hist])
+                    data_PLUS_004.append(["synthethic", img, hist])"""
 
     return data_PLUS_genuine, data_PLUS_spoofed, data_PLUS_003, data_PLUS_004
 
@@ -99,15 +99,17 @@ def loadSCUT():
 # -----------------------------------------------------------------------
 # KNN
 # -----------------------------------------------------------------------
-def knncalc(k, list):
+def knncalc(k, feature_list):
     knn_list = list()
-    list.sort(key=lambda tup: tup[1]) #nach den Werten in der zweiten Spalte sortieren
+    feature_list.sort(key=lambda tup: tup[1]) #nach den Werten in der zweiten Spalte sortieren (kng)
     for i in range(k):
-        knn_list.append(list[i][0]) # es Werten "spoofed" und "genuine" eingetragen
+        knn_list.append(feature_list[i][0]) # es werden "spoofed" und "genuine" eingetragen
     fdist = dict(zip(*np.unique(knn_list, return_counts=True)))
-    pred = list(fdist)[-1]
+    pred = max(fdist, key=fdist.get)
     return pred
 
+
+####### for last step if we have several feature classifications
 def most_common_value(list):
     mcv = dict(zip(*np.unique(list, return_counts=True)))
     pred = list(mcv)[-1]
@@ -117,7 +119,7 @@ def most_common_value(list):
 # -----------------------------------------------------------------------
 # HISTOGRAM
 # -----------------------------------------------------------------------
-k = 4
+k = 2
 def histBin(img, k):
     if k<257:
         hist, bin_edges1 = np.histogram(img, bins=np.arange(0, k), density=True)
@@ -125,11 +127,11 @@ def histBin(img, k):
     else:
         return "Falscher k-Wert"
 
-
 def intersection_test_(hist1, hist2):
     intersection = np.minimum(hist1, hist2)
     int_area = intersection.sum() # /2 wenn die bins so aussehen bins=np.arange(0, 256, 0.5)
-    return int_area
+    resultat = 1-int_area
+    return resultat
 
 def euclidean_distance_test(hist1, hist2):
     sum = 0
@@ -140,7 +142,6 @@ def euclidean_distance_test(hist1, hist2):
 
 def manhattan_distance_funktion(x, y):
     return (abs(x-y))
-
 def sum_manhattan_distance_test(hist1, hist2):
     sum = 0
     for i in range (0,256):
@@ -148,30 +149,11 @@ def sum_manhattan_distance_test(hist1, hist2):
     ma_dist = sum
     return ma_dist
 
-# Bild statt Histogramm wird übergeben
-def earth_movers_distance_test(img1, img2):
+#earthmovers distance
+def em_dist(img1, img2):
     images = [img.ravel() for img in [img1, img2]]
     em_distance = wasserstein_distance(images[0], images[1])
     return em_distance
-
-"""
-# mit selbst programmierten knn code
-conclusion_list1 # bereits sortiert für methode 1
-conclusion_list2 # bereits sortiert für methode 2
-knn_list1 = list()
-knn_list2 = list()
-k # die k-Foulds
-for i in range(k):
-    knn_list1.append(conclusion_list1[i][0]) #die ersten k werte anfügen
-    knn_list2.append(conclusion_list2[i][0])
-fdist1 = dict(zip(*np.unique(knn_list1, return_counts=True)))
-fdist2 = dict(zip(*np.unique(knn_list2, return_counts=True)))
-pred = list() # predictions list
-pred.append(list(fdist1)[-1])
-pred.append(list(fdist2)[-1])
-final = dict(zip(*np.unique(pred, return_counts=True)))
-prediction = list(final)[-1]
-"""
 
 # -----------------------------------------------------------------------
 # ENTROPY
@@ -180,10 +162,11 @@ prediction = list(final)[-1]
 # calculate Entropy with frames--> takes nr of frames and image path and gives back an array of entropies:
 def calculate_entropies(image, num_frames):
 
-    image = image[1]
+    #image = image[1]
     # Divide the image into frames
     entropies = []
-    height, width = image.shape
+    size = image.shape
+    height, width = size[0], size[1]
 
     frame_size = width // num_frames
 
@@ -259,44 +242,61 @@ current_data = combine_list_with_genuine(data_PLUS_003)
 
 # convert data to numpy array
 labels_list, images_list, histograms_list = [], [], []
+counter = 0
 for row in current_data:
-    # Append values to respective columns
     labels_list.append(row[0])
     images_list.append(row[1])
     histograms_list.append(row[2])
-#features = [cv2.resize(img, (100, 100)) for img in images]
+    #counter += 1       #for debugging purposes
+features = [cv2.resize(img, (736,192)) for img in images_list]      #Alternative sklearn.preprocessing.StandardScaler
 labels = np.array(labels_list)
-images = np.array(images_list)
+images = np.array(features)
 histograms = np.array(histograms_list)
+#print("counter= " + str(counter))          #for debugging purposes
 
+# -----------------------------------------------------------------------
+# ENTROPY
+# -----------------------------------------------------------------------
+# calculate feature global entropy
+num_frames = 1
+entropy_list = []
+for img in range(len(images)):
+    entropies = calculate_entropies(images[img], num_frames)
+    entropy_list.append([labels[img], entropies])
+
+
+
+# knn global entropy
+
+
+# calculate feature patch entropy
+
+# knn patch entropy
 
 
 
 loo = LeaveOneOut()
+pred_list = []
+correct_entropy_preds = 0
+correct_em_preds = 0
 
-correct_predictions = 0
+for i, (train_index, test_index) in enumerate(loo.split(images)):
+    #calculate distances
+    #train, test = entropy_list[train_index], entropy_list[test_index]
+    test_entropy = entropy_list[test_index[0]]
+    entropy_distances = []
+    for j in train_index:
+        entropy_distances.append([entropy_list[j][0], abs(entropy_list[j][1][0] - test_entropy[1][0])])
 
-for train_index, test_index in loo.split(labels, images, histograms):
-    # -----------------------------------------------------------------------
-    # ENTROPY
-    # -----------------------------------------------------------------------
-    # calculate feature global entropy
+    #prediction for current test image
+    k_knn = 3
+    pred_entropy = knncalc(k_knn, entropy_distances)
 
-    # Calculate entropies for all data
-    num_frames = 1
-    entropy_list = []
-    for img in images, labels:
-        entropies = calculate_entropies(img, num_frames)
-        entropy_list.append([labels, entropies])
-
-    train, test = entropy_list[train_index], entropy_list[test_index]
-
-    # knn global entropy
-
-
-    # calculate feature patch entropy
-
-    # knn patch entropy
+    if pred_entropy == test_entropy[0]:
+        pred_list.append(0)
+        correct_entropy_preds += 1
+    else:
+        pred_list.append(1)
 
     # -----------------------------------------------------------------------
     # VARIANCE
@@ -313,26 +313,25 @@ for train_index, test_index in loo.split(labels, images, histograms):
     # HISTOGRAM
     # -----------------------------------------------------------------------
     # calculate feature histogram
+    # calculate feature global entropy
 
-    # knn histogram
+    #earthmovers distance
+    em_distance = []
+    for j in range(len(images)):
+        em = em_dist(images[test_index], images[j])
+        em_distance.append([labels[j], em])
+
+    # prediction for current test image
+    k_knn = 3
+    pred_em = knncalc(k_knn, em_distance)
+
+    if pred_em == labels[test_index]:
+        correct_em_preds += 1
 
 
 
+accuracy_entropy = correct_entropy_preds / len(images)
+print(f"Accuracy entropy with Leave-One-Out Cross-Validation: {accuracy_entropy*100:.2f}%")
 
-
-    X_train, X_test = features[train_index], features[test_index]
-    y_train, y_test = labels[train_index], labels[test_index]
-
-    # KNN classifier
-    k = 5  # You can adjust the number of neighbors as needed
-    knn_classifier = KNeighborsClassifier(n_neighbors=k)
-    knn_classifier.fit(X_train, y_train)
-
-    # Predict label for the left-out instance
-    test_label = knn_classifier.predict(X_test)
-
-    if test_label == y_test[0]:
-        correct_predictions += 1
-
-accuracy = correct_predictions / len(images)
-print(f"Accuracy with Leave-One-Out Cross-Validation: {accuracy*100:.2f}%")
+accuracy_em = correct_em_preds / len(images)
+print(f"Accuracy em with Leave-One-Out Cross-Validation: {accuracy_em*100:.2f}%")
