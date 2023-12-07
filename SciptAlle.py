@@ -1,14 +1,10 @@
 import math
-import random
-
 import numpy as np
 import cv2
 from pathlib import Path
-
 from scipy.stats import wasserstein_distance
 from skimage.measure import shannon_entropy
 from sklearn.model_selection import LeaveOneOut
-from sklearn.neighbors import KNeighborsClassifier
 
 
 # -----------------------------------------------------------------------
@@ -159,8 +155,6 @@ def em_dist(img1, img2):
 
 # calculate Entropy with frames--> takes nr of frames and image path and gives back an array of entropies:
 def calculate_entropies(image, num_frames):
-
-    #image = image[1]
     # Divide the image into frames
     entropies = []
     size = image.shape
@@ -186,11 +180,10 @@ def calculate_entropies(image, num_frames):
 # VARIANCE
 # -----------------------------------------------------------------------
 def calculate_variances(image, num_frames):
-
-    image = image[1]
     # Divide the image into frames
     variances = []
-    height, width = image.shape
+    size = image.shape
+    height, width = size[0], size[1]
 
     frame_size = width // num_frames
 
@@ -203,6 +196,7 @@ def calculate_variances(image, num_frames):
 
     return variances
 
+
 # Function to calculate patch variances of an image with size patch_x x patch_y
 def calculate_patch_variances(image, patch_x, patch_y):
     patch_size = (patch_x, patch_y)
@@ -213,6 +207,7 @@ def calculate_patch_variances(image, patch_x, patch_y):
             patch = image[i:i+patch_size[0], j:j+patch_size[1]]
             variances.append(np.var(patch))
     return variances
+
 
 # -----------------------------------------------------------------------
 # METHODEN-AUFRUFE
@@ -225,7 +220,7 @@ data_PLUS_genuine, data_PLUS_spoofed, data_PLUS_003, data_PLUS_004 = loadPLUS()
 
 
 # -----------------------------------------------------------------------
-# LEAVE ONE OUT CROSS VALIDATION
+# CURRENT DATA
 # -----------------------------------------------------------------------
 
 def combine_list_with_genuine(list):
@@ -251,7 +246,7 @@ histograms = np.array(histograms_list)
 
 
 # -----------------------------------------------------------------------
-# ENTROPY
+# CALCULATE FEATURE ENTROPY
 # -----------------------------------------------------------------------
 # calculate feature global entropy
 num_frames = 1
@@ -261,25 +256,55 @@ for img in range(len(images)):
     entropy_list.append([labels[img], entropies])
 
 
-
-# knn global entropy
-
-
 # calculate feature patch entropy
 
 # knn patch entropy
 
 
+# -----------------------------------------------------------------------
+# CALCULATE FEATURE VARIANCE
+# -----------------------------------------------------------------------
+
+# calculate feature variance
+variance_list1 = []
+variance_list10 = []
+for img in range(len(images)):
+    #global variance
+    variances1 = calculate_variances(images[img], 1)
+    variance_list1.append([labels[img], variances1])
+    #variance with 10 patches
+    variances10 = calculate_variances(images[img], 10)
+    variance_list10.append([labels[img], variances10])
+
+#other method
+"""
+num_frames = 10
+variance_list10x10 = []
+for img in range(len(images)):
+    variances = calculate_patch_variances(images[img], 10, 10)
+    variance_list10x10.append([labels[img], variances])
+"""
+
+
+
+# -----------------------------------------------------------------------
+# LEAVE ONE OUT CROSS VALIDATION
+# -----------------------------------------------------------------------
 
 loo = LeaveOneOut()
 pred_list = []
 correct_entropy_preds = 0
+correct_variance1_preds = 0
+correct_variance10_preds = 0
 correct_em_preds = 0
 correct_it_preds = 0
 correct_ed_preds = 0
 correct_smd_preds = 0
 
 for i, (train_index, test_index) in enumerate(loo.split(images)):
+    # -----------------------------------------------------------------------
+    # ENTROPY
+    # -----------------------------------------------------------------------
     #calculate distances
     test_entropy = entropy_list[test_index[0]]
     entropy_distances = []
@@ -296,20 +321,39 @@ for i, (train_index, test_index) in enumerate(loo.split(images)):
     # -----------------------------------------------------------------------
     # VARIANCE
     # -----------------------------------------------------------------------
-    # calculate feature global variance
 
-    # knn global variance
+    # global variance
+    test_variance1 = variance_list1[test_index[0]]
+    variance1_distances = []
+    for j in train_index:
+        variance1_distances.append([variance_list1[j][0], abs(variance_list1[j][1][0] - test_variance1[1][0])])
 
-    # calculate feature patch variance
+    # prediction for current test image
+    k_knn = 3
+    pred_variance1 = knncalc(k_knn, variance1_distances)
 
-    # knn patch variance
+    if pred_variance1 == test_variance1[0]:
+        correct_variance1_preds += 1
+
+    # patch variance
+    test_variance10 = variance_list10[test_index[0]]
+    variance10_distances = []
+    for j in train_index:
+        variance10_distances.append([variance_list10[j][0], abs(variance_list10[j][1][0] - test_variance10[1][0])])
+
+    # prediction for current test image
+    k_knn = 3
+    pred_variance10 = knncalc(k_knn, variance10_distances)
+
+    if pred_variance10 == test_variance10[0]:
+        correct_variance10_preds += 1
 
     # -----------------------------------------------------------------------
     # HISTOGRAM
     # -----------------------------------------------------------------------
     # calculate feature histogram
     # calculate feature global entropy
-
+"""
     #earthmovers distance
     em_distance = []
     for j in range(len(images)):
@@ -352,12 +396,22 @@ for i, (train_index, test_index) in enumerate(loo.split(images)):
 
     if pred_smd == labels[test_index]:
         correct_smd_preds += 1
+        """
 
 
 total = len(images)
+print(str(total))
+
 accuracy_entropy = correct_entropy_preds / total
 print(f'Accuracy entropy with Leave-One-Out Cross-Validation: {accuracy_entropy * 100:.2f}%')
 
+accuracy_variance1 = correct_variance1_preds / total
+print(f'Accuracy global variance: {accuracy_variance1 * 100:.2f}%')
+
+accuracy_variance10 = correct_variance10_preds / total
+print(f'Accuracy variance with 10 patches: {accuracy_variance10 * 100:.2f}%')
+
+"""
 accuracy_em = correct_em_preds / total
 print(f'Accuracy em with Leave-One-Out Cross-Validation: {accuracy_em * 100:.2f}%')
 
@@ -369,3 +423,4 @@ print(f'Accuracy ed with Leave-One-Out Cross-Validation: {accuracy_ed * 100:.2f}
 
 accuracy_smd = correct_smd_preds / total
 print(f'Accuracy smd with Leave-One-Out Cross-Validation: {accuracy_smd * 100:.2f}%')
+"""
