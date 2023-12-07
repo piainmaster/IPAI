@@ -118,16 +118,14 @@ def most_common_value(list):
 
 def histBin(img, bins):
     if bins<257:
-        hist, bin_edges1 = np.histogram(img, bins=np.arange(0, bins), density=True)
+        hist = cv2.calcHist([img], [0], None, [bin], [0,bin])
         return hist
     else:
-        return "Falscher k-Wert"
+        return "Falscher Bin-Wert"
 
 def intersection_test(hist1, hist2):
-    intersection = np.minimum(hist1, hist2)
-    int_area = intersection.sum() # /2 wenn die bins so aussehen bins=np.arange(0, 256, 0.5)
-    resultat = 1-int_area
-    return resultat
+    value = np.sum(np.minimum(hist1, hist2))
+    return -value
 
 def euclidean_distance_test(hist1, hist2):
     sum = 0
@@ -136,7 +134,7 @@ def euclidean_distance_test(hist1, hist2):
     eu_dist = math.sqrt(sum)
     return eu_dist
 
-def manhattan_distance_test(hist1, hist2):
+def sum_manhattan_distance_test(hist1, hist2):
     sum = 0
     for i in range (0,bin):
         sum = sum + abs(hist1[i][0] - hist2[i][0])
@@ -300,6 +298,7 @@ correct_em_preds = 0
 correct_it_preds = 0
 correct_ed_preds = 0
 correct_smd_preds = 0
+correct_hist_combined_preds = 0
 
 for i, (train_index, test_index) in enumerate(loo.split(images)):
     # -----------------------------------------------------------------------
@@ -351,31 +350,29 @@ for i, (train_index, test_index) in enumerate(loo.split(images)):
     # -----------------------------------------------------------------------
     # HISTOGRAM
     # -----------------------------------------------------------------------
-    # calculate feature histogram
-    # calculate feature global entropy
-"""
-    #earthmovers distance
+
+    #earthmovers distance (runs verrrry slow est.: 600h)
     em_distance = []
-    for j in range(len(images)):
+    for j in train_index:
         em = em_dist(images[test_index], images[j])
         em_distance.append([labels[j], em])
 
     # intersection distance (runs fast)
     it_distance = []
-    for j in range(len(images)):
+    for j in train_index:
         it = intersection_test(histograms[test_index], histograms[j])
         it_distance.append([labels[j], it])
 
     # euclidian distance
     ed_distance = []
-    for j in range(len(images)):
-        ed = euclidean_distance_test(histograms[test_index], histograms[j])
+    for j in train_index:
+        ed = euclidean_distance_test(histograms[test_index][0], histograms[j])
         ed_distance.append([labels[j], ed])
 
     # sum of manhattan distances
     smd_distance = []
-    for j in range(len(images)):
-        smd = manhattan_distance_test(histograms[test_index], histograms[j])
+    for j in train_index:
+        smd = sum_manhattan_distance_test(histograms[test_index][0], histograms[j])
         smd_distance.append([labels[j], smd])
 
     # prediction for current test image
@@ -384,6 +381,10 @@ for i, (train_index, test_index) in enumerate(loo.split(images)):
     pred_it = knncalc(k_knn, it_distance)
     pred_ed = knncalc(k_knn, ed_distance)
     pred_smd = knncalc(k_knn, smd_distance)
+
+    pred_hist_combined = []
+    pred_hist_combined.append([pred_it, pred_ed, pred_smd])
+    pred_hist_combined_value = most_common_value(pred_hist_combined)
 
     if pred_em == labels[test_index]:
         correct_em_preds += 1
@@ -396,14 +397,16 @@ for i, (train_index, test_index) in enumerate(loo.split(images)):
 
     if pred_smd == labels[test_index]:
         correct_smd_preds += 1
-        """
+
+    if pred_hist_combined_value == labels[test_index]:
+        correct_hist_combined_preds += 1
 
 
-total = len(images)
+total = len(images) - 1
 print(str(total))
 
 accuracy_entropy = correct_entropy_preds / total
-print(f'Accuracy entropy with Leave-One-Out Cross-Validation: {accuracy_entropy * 100:.2f}%')
+print(f'Accuracy entropy: {accuracy_entropy * 100:.2f}%')
 
 accuracy_variance1 = correct_variance1_preds / total
 print(f'Accuracy global variance: {accuracy_variance1 * 100:.2f}%')
@@ -411,16 +414,17 @@ print(f'Accuracy global variance: {accuracy_variance1 * 100:.2f}%')
 accuracy_variance10 = correct_variance10_preds / total
 print(f'Accuracy variance with 10 patches: {accuracy_variance10 * 100:.2f}%')
 
-"""
 accuracy_em = correct_em_preds / total
-print(f'Accuracy em with Leave-One-Out Cross-Validation: {accuracy_em * 100:.2f}%')
+print(f'Accuracy em: {accuracy_em * 100:.2f}%')
 
 accuracy_it = correct_it_preds / total
-print(f'Accuracy it with Leave-One-Out Cross-Validation: {accuracy_it * 100:.2f}%')
+print(f'Accuracy it: {accuracy_it * 100:.2f}%')
 
 accuracy_ed = correct_ed_preds / total
-print(f'Accuracy ed with Leave-One-Out Cross-Validation: {accuracy_ed * 100:.2f}%')
+print(f'Accuracy ed: {accuracy_ed * 100:.2f}%')
 
 accuracy_smd = correct_smd_preds / total
-print(f'Accuracy smd with Leave-One-Out Cross-Validation: {accuracy_smd * 100:.2f}%')
-"""
+print(f'Accuracy smd: {accuracy_smd * 100:.2f}%')
+
+accuracy_hist_combined = correct_hist_combined_preds / total
+print(f"Accuracy combined of hist: {accuracy_hist_combined*100:.2f}%")
