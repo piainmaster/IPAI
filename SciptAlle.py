@@ -127,7 +127,7 @@ def histBin(img, bins):
     else:
         return "Falscher k-Wert"
 
-def intersection_test_(hist1, hist2):
+def intersection_test(hist1, hist2):
     intersection = np.minimum(hist1, hist2)
     int_area = intersection.sum() # /2 wenn die bins so aussehen bins=np.arange(0, 256, 0.5)
     resultat = 1-int_area
@@ -140,7 +140,7 @@ def euclidean_distance_test(hist1, hist2):
     eu_dist = math.sqrt(sum)
     return eu_dist
 
-def sum_manhattan_distance_test(hist1, hist2):
+def manhattan_distance_test(hist1, hist2):
     sum = 0
     for i in range (0,bin):
         sum = sum + abs(hist1[i][0] - hist2[i][0])
@@ -224,7 +224,6 @@ data_PLUS_genuine, data_PLUS_spoofed, data_PLUS_003, data_PLUS_004 = loadPLUS()
 
 
 
-
 # -----------------------------------------------------------------------
 # LEAVE ONE OUT CROSS VALIDATION
 # -----------------------------------------------------------------------
@@ -245,12 +244,11 @@ for row in current_data:
     labels_list.append(row[0])
     images_list.append(row[1])
     histograms_list.append(row[2])
-    #counter += 1       #for debugging purposes
 features = [cv2.resize(img, (736,192)) for img in images_list]      #Alternative sklearn.preprocessing.StandardScaler
 labels = np.array(labels_list)
 images = np.array(features)
 histograms = np.array(histograms_list)
-#print("counter= " + str(counter))          #for debugging purposes
+
 
 # -----------------------------------------------------------------------
 # ENTROPY
@@ -283,7 +281,6 @@ correct_smd_preds = 0
 
 for i, (train_index, test_index) in enumerate(loo.split(images)):
     #calculate distances
-    #train, test = entropy_list[train_index], entropy_list[test_index]
     test_entropy = entropy_list[test_index[0]]
     entropy_distances = []
     for j in train_index:
@@ -294,10 +291,7 @@ for i, (train_index, test_index) in enumerate(loo.split(images)):
     pred_entropy = knncalc(k_knn, entropy_distances)
 
     if pred_entropy == test_entropy[0]:
-        pred_list.append(0)
         correct_entropy_preds += 1
-    else:
-        pred_list.append(1)
 
     # -----------------------------------------------------------------------
     # VARIANCE
@@ -337,7 +331,7 @@ for i, (train_index, test_index) in enumerate(loo.split(images)):
     # sum of manhattan distances
     smd_distance = []
     for j in range(len(images)):
-        smd = sum_manhattan_distance_test(histograms[test_index], histograms[j])
+        smd = manhattan_distance_test(histograms[test_index], histograms[j])
         smd_distance.append([labels[j], smd])
 
     # prediction for current test image
@@ -360,17 +354,18 @@ for i, (train_index, test_index) in enumerate(loo.split(images)):
         correct_smd_preds += 1
 
 
-accuracy_entropy = correct_entropy_preds / len(images)
-print(f'Accuracy entropy with Leave-One-Out Cross-Validation: {accuracy_entropy*100:.2f}%')
+total = len(images)
+accuracy_entropy = correct_entropy_preds / total
+print(f'Accuracy entropy with Leave-One-Out Cross-Validation: {accuracy_entropy * 100:.2f}%')
 
-accuracy_em = correct_em_preds / len(images)
-print(f'Accuracy em with Leave-One-Out Cross-Validation: {accuracy_em*100:.2f}%')
+accuracy_em = correct_em_preds / total
+print(f'Accuracy em with Leave-One-Out Cross-Validation: {accuracy_em * 100:.2f}%')
 
-accuracy_it = correct_it_preds / len(images)
+accuracy_it = correct_it_preds / total
 print(f'Accuracy it with Leave-One-Out Cross-Validation: {accuracy_it * 100:.2f}%')
 
-accuracy_ed = correct_ed_preds / len(images)
+accuracy_ed = correct_ed_preds / total
 print(f'Accuracy ed with Leave-One-Out Cross-Validation: {accuracy_ed * 100:.2f}%')
 
-accuracy_smd = correct_smd_preds / len(images)
+accuracy_smd = correct_smd_preds / total
 print(f'Accuracy smd with Leave-One-Out Cross-Validation: {accuracy_smd * 100:.2f}%')
