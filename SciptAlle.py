@@ -24,13 +24,13 @@ def loadPLUS():
     p = Path(datasource_path + "/" + "genuine")
     for filename in p.glob('**/*.png'):
         img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
-        hist = histBin(img, k)
+        hist = histBin(img, bin)
         data_PLUS_genuine.append(["genuine", img, hist])
 
     """p = Path(datasource_path + "/" + "spoofed")
     for filename in p.glob('**/*.png'):
         img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
-        histBin(img, k)
+        histBin(img, bin)
         data_PLUS_spoofed.append(["spoofed", img, hist])"""
 
     for synthethic_category in ["spoofed_synthethic_cyclegan",
@@ -41,14 +41,14 @@ def loadPLUS():
                 p = Path(datasource_path + "/" + synthethic_category + "/" + variant + "/" + fold)
                 for filename in p.glob('**/*.png'):
                     img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
-                    hist = histBin(img, k)
+                    hist = histBin(img, bin)
                     data_PLUS_003.append(["synthethic", img, hist])
         """for variant in ["004"]:
             for fold in ["1", "2", "3", "4", "5"]:
                 p = Path(datasource_path + "/" + synthethic_category + "/" + variant + "/" + fold)
                 for filename in p.glob('**/*.png'):
                     img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
-                    hist = histBin(img, k)
+                    hist = histBin(img, bin)
                     data_PLUS_004.append(["synthethic", img, hist])"""
 
     return data_PLUS_genuine, data_PLUS_spoofed, data_PLUS_003, data_PLUS_004
@@ -65,13 +65,13 @@ def loadSCUT():
     p = Path(datasource_path + "/" + "genuine")
     for filename in p.glob('**/*.png'):
         img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
-        hist = histBin(img, k)
+        hist = histBin(img, bin)
         data_SCUT_genuine.append(["genuine", img, hist])
 
     p = Path(datasource_path + "/" + "spoofed")
     for filename in p.glob('**/*.png'):
         img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
-        hist = hist = histBin(img, k)
+        hist = hist = histBin(img, bin)
         data_SCUT_spoofed.append(["spoofed", img, hist])
 
     for synthethic_category in ["spoofed_synthethic_cyclegan",
@@ -82,14 +82,14 @@ def loadSCUT():
                 p = Path(datasource_path + "/" + synthethic_category + "/" + variant + "/" + fold)
                 for filename in p.glob('**/*.png'):
                     img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
-                    hist = histBin(img, k)
+                    hist = histBin(img, bin)
                     data_SCUT_007.append(["synthethic", img, hist])
         for variant in ["008"]:
             for fold in ["1", "2", "3", "4", "5"]:
                 p = Path(datasource_path + "/" + synthethic_category + "/" + variant + "/" + fold)
                 for filename in p.glob('**/*.png'):
                     img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
-                    hist = histBin(img, k)
+                    hist = histBin(img, bin)
                     data_SCUT_008.append(["synthethic", img, hist])
 
     return data_SCUT_genuine, data_SCUT_spoofed, data_SCUT_007, data_SCUT_008
@@ -119,10 +119,10 @@ def most_common_value(list):
 # -----------------------------------------------------------------------
 # HISTOGRAM
 # -----------------------------------------------------------------------
-k = 2
-def histBin(img, k):
-    if k<257:
-        hist, bin_edges1 = np.histogram(img, bins=np.arange(0, k), density=True)
+
+def histBin(img, bins):
+    if bins<257:
+        hist, bin_edges1 = np.histogram(img, bins=np.arange(0, bins), density=True)
         return hist
     else:
         return "Falscher k-Wert"
@@ -135,17 +135,15 @@ def intersection_test_(hist1, hist2):
 
 def euclidean_distance_test(hist1, hist2):
     sum = 0
-    for i in range (0,256):
+    for i in range (0,bin):
         sum = sum + (hist1[i][0]-hist2[i][0])**2
     eu_dist = math.sqrt(sum)
     return eu_dist
 
-def manhattan_distance_funktion(x, y):
-    return (abs(x-y))
 def sum_manhattan_distance_test(hist1, hist2):
     sum = 0
-    for i in range (0,256):
-        sum = sum + manhattan_distance_funktion(hist1[i][0], hist2[i][0])
+    for i in range (0,bin):         #todo: bins
+        sum = sum + abs(hist1[i][0] - hist2[i][0])
     ma_dist = sum
     return ma_dist
 
@@ -219,7 +217,7 @@ def calculate_patch_variances(image, patch_x, patch_y):
 # -----------------------------------------------------------------------
 # METHODEN-AUFRUFE
 # -----------------------------------------------------------------------
-
+bin = 6
 data_PLUS_genuine, data_PLUS_spoofed, data_PLUS_003, data_PLUS_004 = loadPLUS()
 #data_SCUT_genuine, data_SCUT_spoofed, data_SCUT_007, data_SCUT_008 = loadSCUT()
 
