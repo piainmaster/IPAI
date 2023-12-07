@@ -142,7 +142,7 @@ def euclidean_distance_test(hist1, hist2):
 
 def sum_manhattan_distance_test(hist1, hist2):
     sum = 0
-    for i in range (0,bin):         #todo: bins
+    for i in range (0,bin):
         sum = sum + abs(hist1[i][0] - hist2[i][0])
     ma_dist = sum
     return ma_dist
@@ -277,6 +277,9 @@ loo = LeaveOneOut()
 pred_list = []
 correct_entropy_preds = 0
 correct_em_preds = 0
+correct_it_preds = 0
+correct_ed_preds = 0
+correct_smd_preds = 0
 
 for i, (train_index, test_index) in enumerate(loo.split(images)):
     #calculate distances
@@ -319,17 +322,55 @@ for i, (train_index, test_index) in enumerate(loo.split(images)):
         em = em_dist(images[test_index], images[j])
         em_distance.append([labels[j], em])
 
+    # intersection distance (runs fast)
+    it_distance = []
+    for j in range(len(images)):
+        it = intersection_test(histograms[test_index], histograms[j])
+        it_distance.append([labels[j], it])
+
+    # euclidian distance
+    ed_distance = []
+    for j in range(len(images)):
+        ed = euclidean_distance_test(histograms[test_index], histograms[j])
+        ed_distance.append([labels[j], ed])
+
+    # sum of manhattan distances
+    smd_distance = []
+    for j in range(len(images)):
+        smd = sum_manhattan_distance_test(histograms[test_index], histograms[j])
+        smd_distance.append([labels[j], smd])
+
     # prediction for current test image
     k_knn = 3
     pred_em = knncalc(k_knn, em_distance)
+    pred_it = knncalc(k_knn, it_distance)
+    pred_ed = knncalc(k_knn, ed_distance)
+    pred_smd = knncalc(k_knn, smd_distance)
 
     if pred_em == labels[test_index]:
         correct_em_preds += 1
 
+    if pred_it == labels[test_index]:
+        correct_it_preds += 1
+
+    if pred_ed == labels[test_index]:
+        correct_ed_preds += 1
+
+    if pred_smd == labels[test_index]:
+        correct_smd_preds += 1
 
 
 accuracy_entropy = correct_entropy_preds / len(images)
-print(f"Accuracy entropy with Leave-One-Out Cross-Validation: {accuracy_entropy*100:.2f}%")
+print(f'Accuracy entropy with Leave-One-Out Cross-Validation: {accuracy_entropy*100:.2f}%')
 
 accuracy_em = correct_em_preds / len(images)
-print(f"Accuracy em with Leave-One-Out Cross-Validation: {accuracy_em*100:.2f}%")
+print(f'Accuracy em with Leave-One-Out Cross-Validation: {accuracy_em*100:.2f}%')
+
+accuracy_it = correct_it_preds / len(images)
+print(f'Accuracy it with Leave-One-Out Cross-Validation: {accuracy_it * 100:.2f}%')
+
+accuracy_ed = correct_ed_preds / len(images)
+print(f'Accuracy ed with Leave-One-Out Cross-Validation: {accuracy_ed * 100:.2f}%')
+
+accuracy_smd = correct_smd_preds / len(images)
+print(f'Accuracy smd with Leave-One-Out Cross-Validation: {accuracy_smd * 100:.2f}%')
