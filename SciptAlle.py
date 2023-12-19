@@ -50,7 +50,6 @@ def loadPLUS():
     return data_PLUS_genuine, data_PLUS_spoofed, data_PLUS_003, data_PLUS_004
 
 
-
 def loadSCUT():
     # Define the path to the dataset
     datasource_path = "dataset/SCUT"
@@ -224,7 +223,7 @@ def combine_list_with_genuine(list):
 
 # combine lists data_PLUS_genuine and data_PLUS_003
 current_data = []
-current_data = combine_list_with_genuine(data_PLUS_spoofed)
+current_data = combine_list_with_genuine(data_PLUS_003)
 
 
 # convert data to numpy array
@@ -234,7 +233,9 @@ for row in current_data:
     labels_list.append(row[0])
     images_list.append(row[1])
     histograms_list.append(row[2])
-features = [cv2.resize(img, (736,192)) for img in images_list]      #Alternative sklearn.preprocessing.StandardScaler
+method = cv2.INTER_LANCZOS4
+features = [cv2.resize(img, (736,192), interpolation=method) for img in images_list]      #Alternative sklearn.preprocessing.StandardScaler
+
 labels = np.array(labels_list)
 images = np.array(features)
 histograms = np.array(histograms_list)
@@ -275,6 +276,7 @@ for img in range(len(images)):
     #variance with 10 patches
     variances10 = calculate_variances(images[img], 10)
     variance_list10.append([labels[img], variances10])
+    """
     #variance with 20 patches
     variances20 = calculate_variances(images[img], 20)
     variance_list20.append([labels[img], variances20])
@@ -290,8 +292,9 @@ for img in range(len(images)):
     #variance with 100 patches
     variances100 = calculate_variances(images[img], 100)
     variance_list100.append([labels[img], variances100])
+    """
 
-
+"""
 variance_list10x10 = []
 variance_list20x20 = []
 variance_list30x30 = []
@@ -328,7 +331,7 @@ for img in range(len(images)):
     variances100x200 = calculate_patch_variances(images[img], 100, 200)
     variance_list100x200.append([labels[img], variances100x200])
 
-
+"""
 
 # -----------------------------------------------------------------------
 # LEAVE ONE OUT CROSS VALIDATION
@@ -341,6 +344,7 @@ correct_entropy_preds = 0
 correct_variance1_preds = 0
 correct_variance5_preds = 0
 correct_variance10_preds = 0
+"""
 correct_variance20_preds = 0
 correct_variance30_preds = 0
 correct_variance40_preds = 0
@@ -354,7 +358,7 @@ correct_variance50x50_preds = 0
 correct_variance70x70_preds = 0
 correct_variance100x100_preds = 0
 correct_variance100x200_preds = 0
-
+"""
 
 correct_em_preds = 0
 correct_it_preds = 0
@@ -370,7 +374,7 @@ for i, (train_index, test_index) in enumerate(loo.split(images)):
     test_entropy = entropy_list[test_index[0]]
     entropy_distances = []
     for j in train_index:
-        entropy_distances.append([entropy_list[j][0], abs(entropy_list[j][1][0] - test_entropy[1][0])])
+        entropy_distances.append([entropy_list[j][0], abs(entropy_list[j][1][0] - test_entropy[1][0])])     #linalg as second method
     test_entropy = entropy_list[test_index[0]]
 
     #prediction for current test image
@@ -388,6 +392,7 @@ for i, (train_index, test_index) in enumerate(loo.split(images)):
     variance1_distances = []
     test_variance10 = variance_list10[test_index[0]]
     variance10_distances = []
+    """
     test_variance20 = variance_list20[test_index[0]]
     variance20_distances = []
     test_variance30 = variance_list30[test_index[0]]
@@ -415,10 +420,12 @@ for i, (train_index, test_index) in enumerate(loo.split(images)):
     variance100x100_distances = []
     test_variance100x200 = variance_list100x200[test_index[0]]
     variance100x200_distances = []
+    """
 
     for j in train_index:
         variance1_distances.append([variance_list1[j][0], abs(variance_list1[j][1][0] - test_variance1[1][0])])
         variance10_distances.append([variance_list10[j][0], abs(variance_list10[j][1][0] - test_variance10[1][0])])
+        """
         variance20_distances.append([variance_list20[j][0], abs(variance_list20[j][1][0] - test_variance20[1][0])])
         variance30_distances.append([variance_list30[j][0], abs(variance_list30[j][1][0] - test_variance30[1][0])])
         variance40_distances.append([variance_list40[j][0], abs(variance_list40[j][1][0] - test_variance40[1][0])])
@@ -433,11 +440,13 @@ for i, (train_index, test_index) in enumerate(loo.split(images)):
         variance70x70_distances.append([variance_list70x70[j][0], abs(variance_list70x70[j][1][0] - test_variance70x70[1][0])])
         variance100x100_distances.append([variance_list100x100[j][0], abs(variance_list100x100[j][1][0] - test_variance100x100[1][0])])
         variance100x200_distances.append([variance_list100x200[j][0], abs(variance_list100x200[j][1][0] - test_variance100x200[1][0])])
+        """
 
 
     # prediction for current test image
     if knncalc(k_knn, variance1_distances) == test_variance1[0]: correct_variance1_preds += 1
     if knncalc(k_knn, variance10_distances) == test_variance10[0]: correct_variance10_preds += 1
+    """
     if knncalc(k_knn, variance20_distances) == test_variance20[0]: correct_variance20_preds += 1
     if knncalc(k_knn, variance30_distances) == test_variance30[0]: correct_variance30_preds += 1
     if knncalc(k_knn, variance40_distances) == test_variance40[0]: correct_variance40_preds += 1
@@ -452,6 +461,7 @@ for i, (train_index, test_index) in enumerate(loo.split(images)):
     if knncalc(k_knn, variance70x70_distances) == test_variance70x70[0]: correct_variance70x70_preds += 1
     if knncalc(k_knn, variance100x100_distances) == test_variance100x100[0]: correct_variance100x100_preds += 1
     if knncalc(k_knn, variance100x200_distances) == test_variance100x200[0]: correct_variance100x200_preds += 1
+    """
 
 
     """
@@ -516,9 +526,10 @@ print(f'Total number of samples: {str(total)}')
 
 print(f'Accuracy entropy: {correct_entropy_preds / total * 100:.2f}%')
 
-print(f'Classification of data_PLUS_genuine and data_PLUS_spoofed \nVariances with knn {k_knn}')
+print(f'Classification of data_PLUS_genuine and data_PLUS_003 \nVariances with knn {k_knn}')
 print(f'Accuracy global variance: {correct_variance1_preds / total * 100:.3f}%')
 print(f'Accuracy variance with 10 patches: {correct_variance10_preds / total * 100:.3f}%')
+"""
 print(f'Accuracy variance with 20 patches: {correct_variance20_preds / total * 100:.3f}%')
 print(f'Accuracy variance with 30 patches: {correct_variance30_preds / total * 100:.3f}%')
 print(f'Accuracy variance with 40 patches: {correct_variance40_preds / total * 100:.3f}%')
@@ -533,6 +544,7 @@ print(f'Accuracy variance with 50x50 patches: {correct_variance50x50_preds / tot
 print(f'Accuracy variance with 70x70 patches: {correct_variance70x70_preds / total * 100:.3f}%')
 print(f'Accuracy variance with 100x100 patches: {correct_variance100x100_preds / total * 100:.3f}%')
 print(f'Accuracy variance with 100x200 patches: {correct_variance100x200_preds / total * 100:.3f}%')
+"""
 
 """
 accuracy_em = correct_em_preds / total
