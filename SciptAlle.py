@@ -241,6 +241,24 @@ images = np.array(features)
 histograms = np.array(histograms_list)
 
 
+
+# combine lists data_PLUS_genuine and data_PLUS_spoofed
+validation_data = []
+validation_data = data_PLUS_spoofed      #todo: nur genuine rein, die Pendant zu spoofed haben
+
+# convert data to numpy array
+validation_labels_list, validation_images_list, validation_histograms_list = [], [], []
+counter = 0
+for row in validation_data:
+    validation_labels_list.append(row[0])
+    validation_images_list.append(row[1])
+    validation_histograms_list.append(row[2])
+validation_features = [cv2.resize(img, (736,192), interpolation=method) for img in validation_images_list]      #Alternative sklearn.preprocessing.StandardScaler
+validation_labels = np.array(validation_labels_list)
+validation_images = np.array(validation_features)
+validation_histograms = np.array(validation_histograms_list)
+
+
 # -----------------------------------------------------------------------
 # CALCULATE FEATURE ENTROPY
 # -----------------------------------------------------------------------
@@ -259,11 +277,13 @@ for img in range(len(images)):
 variance_list1 = []
 variance_list5 = []
 variance_list10 = []
+"""
 variance_list20 = []
 variance_list30 = []
 variance_list40 = []
 variance_list50 = []
 variance_list100 = []
+"""
 
 #note: these patches divide image in vertical stripes
 for img in range(len(images)):
@@ -360,27 +380,31 @@ correct_variance100x100_preds = 0
 correct_variance100x200_preds = 0
 """
 
+"""
 correct_em_preds = 0
 correct_it_preds = 0
 correct_ed_preds = 0
 correct_smd_preds = 0
 correct_hist_combined_preds = 0
+"""
 
-for i, (train_index, test_index) in enumerate(loo.split(images)):
+for i, (train_index, test_index) in enumerate(loo.split(validation_images)):
     # -----------------------------------------------------------------------
     # ENTROPY
     # -----------------------------------------------------------------------
     #calculate distances
-    test_entropy = entropy_list[test_index[0]]
+    val_entropies = calculate_entropies(validation_images[test_index], num_frames=1)
+    test_entropy = [validation_labels[test_index][0], val_entropies]
+
     entropy_distances = []
-    for j in train_index:
+    for j in range(len(labels)):
         entropy_distances.append([entropy_list[j][0], abs(entropy_list[j][1][0] - test_entropy[1][0])])     #linalg as second method
-    test_entropy = entropy_list[test_index[0]]
+    #test_entropy = entropy_list[test_index[0]]
 
     #prediction for current test image
-    k_knn = 5
+    k_knn = 3
     pred_entropy = knncalc(k_knn, entropy_distances)
-    if pred_entropy == test_entropy[0]:
+    if pred_entropy == 'genuine' and test_entropy[0] == 'genuine' or pred_entropy == 'synthethic' and test_entropy[0] == 'spoofed':
         correct_entropy_preds += 1
 
     # -----------------------------------------------------------------------
@@ -390,7 +414,9 @@ for i, (train_index, test_index) in enumerate(loo.split(images)):
     #global variance
     test_variance1 = variance_list1[test_index[0]]
     variance1_distances = []
-    test_variance10 = variance_list10[test_index[0]]
+    #test_variance10 = variance_list10[test_index[0]]
+    val_variances10 = calculate_variances(validation_images[test_index], num_frames=10)
+    test_variance10 = [validation_labels[test_index][0], val_variances10]
     variance10_distances = []
     """
     test_variance20 = variance_list20[test_index[0]]
@@ -422,7 +448,7 @@ for i, (train_index, test_index) in enumerate(loo.split(images)):
     variance100x200_distances = []
     """
 
-    for j in train_index:
+    for j in range(len(labels)):
         variance1_distances.append([variance_list1[j][0], abs(variance_list1[j][1][0] - test_variance1[1][0])])
         variance10_distances.append([variance_list10[j][0], abs(variance_list10[j][1][0] - test_variance10[1][0])])
         """
@@ -442,10 +468,13 @@ for i, (train_index, test_index) in enumerate(loo.split(images)):
         variance100x200_distances.append([variance_list100x200[j][0], abs(variance_list100x200[j][1][0] - test_variance100x200[1][0])])
         """
 
-
     # prediction for current test image
     if knncalc(k_knn, variance1_distances) == test_variance1[0]: correct_variance1_preds += 1
-    if knncalc(k_knn, variance10_distances) == test_variance10[0]: correct_variance10_preds += 1
+    #if knncalc(k_knn, variance10_distances) == test_variance10[0]: correct_variance10_preds += 1
+    pred_variance10 = knncalc(k_knn, entropy_distances)
+    if pred_variance10 == 'genuine' and test_variance10[0] == 'genuine' or pred_variance10 == 'synthethic' and \
+            test_variance10[0] == 'spoofed':
+        correct_variance10_preds += 1
     """
     if knncalc(k_knn, variance20_distances) == test_variance20[0]: correct_variance20_preds += 1
     if knncalc(k_knn, variance30_distances) == test_variance30[0]: correct_variance30_preds += 1
@@ -521,13 +550,13 @@ for i, (train_index, test_index) in enumerate(loo.split(images)):
     """
 
 
-total = len(labels) - 1
+total = len(validation_labels)
 print(f'Total number of samples: {str(total)}')
 
 print(f'Accuracy entropy: {correct_entropy_preds / total * 100:.2f}%')
 
 print(f'Classification of data_PLUS_genuine and data_PLUS_003 \nVariances with knn {k_knn}')
-print(f'Accuracy global variance: {correct_variance1_preds / total * 100:.3f}%')
+print(f'Accuracy global variance noch falsch!: {correct_variance1_preds / total * 100:.3f}%')
 print(f'Accuracy variance with 10 patches: {correct_variance10_preds / total * 100:.3f}%')
 """
 print(f'Accuracy variance with 20 patches: {correct_variance20_preds / total * 100:.3f}%')
