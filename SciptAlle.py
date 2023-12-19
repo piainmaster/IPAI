@@ -228,7 +228,6 @@ current_data = combine_list_with_genuine(data_PLUS_003)
 
 # convert data to numpy array
 labels_list, images_list, histograms_list = [], [], []
-counter = 0
 for row in current_data:
     labels_list.append(row[0])
     images_list.append(row[1])
@@ -248,7 +247,6 @@ validation_data = data_PLUS_spoofed      #todo: nur genuine rein, die Pendant zu
 
 # convert data to numpy array
 validation_labels_list, validation_images_list, validation_histograms_list = [], [], []
-counter = 0
 for row in validation_data:
     validation_labels_list.append(row[0])
     validation_images_list.append(row[1])
@@ -471,7 +469,7 @@ for i, (train_index, test_index) in enumerate(loo.split(validation_images)):
     # prediction for current test image
     if knncalc(k_knn, variance1_distances) == test_variance1[0]: correct_variance1_preds += 1
     #if knncalc(k_knn, variance10_distances) == test_variance10[0]: correct_variance10_preds += 1
-    pred_variance10 = knncalc(k_knn, entropy_distances)
+    pred_variance10 = knncalc(k_knn, variance10_distances)
     if pred_variance10 == 'genuine' and test_variance10[0] == 'genuine' or pred_variance10 == 'synthethic' and \
             test_variance10[0] == 'spoofed':
         correct_variance10_preds += 1
