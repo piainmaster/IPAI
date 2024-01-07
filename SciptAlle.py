@@ -1,15 +1,14 @@
 import math
+import os
+
 import numpy as np
 import cv2
 from pathlib import Path
 from scipy.stats import wasserstein_distance
 from skimage.measure import shannon_entropy
 from sklearn.model_selection import LeaveOneOut
+from sklearn.model_selection import LeaveOneGroupOut
 
-
-# -----------------------------------------------------------------------
-# DATA IMPORT
-# -----------------------------------------------------------------------
 def loadPLUS():
     # Define the path to the dataset
     datasource_path = "dataset/PLUS"
@@ -31,6 +30,7 @@ def loadPLUS():
 
     for synthethic_category in ["spoofed_synthethic_cyclegan",
                                 "spoofed_synthethic_distancegan",
+                                "spoofed_synthethic_drit",
                                 "spoofed_synthethic_stargan-v2"]:
         for variant in ["003"]:
             for fold in ["1", "2", "3", "4", "5"]:
@@ -56,40 +56,92 @@ def loadSCUT():
 
     data_SCUT_genuine, data_SCUT_spoofed, data_SCUT_007, data_SCUT_008 = [], [], [], []
 
-    # load dataset PLUS
-    p = Path(datasource_path + "/" + "genuine")
-    for filename in p.glob('**/*.png'):
-        img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
-        hist = histBin(img, bin)
-        data_SCUT_genuine.append(["genuine", img, hist])
+    # load dataset SCUT
+    for id in ["001", "005", "009", "013", "017", "021", "025", "029", "033", "037",
+                    "041", "045", "049", "053", "057", "061", "065", "069"]:
+        p = Path(datasource_path + "/" + "genuine" + "/" + id)
+        for filename in p.glob('**/*.bmp'):
+            img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
+            hist = histBin(img, bin)
+            data_SCUT_genuine.append(["genuine", img, hist, id])
 
-    p = Path(datasource_path + "/" + "spoofed")
-    for filename in p.glob('**/*.png'):
-        img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
-        hist = hist = histBin(img, bin)
-        data_SCUT_spoofed.append(["spoofed", img, hist])
+    for id in ["001", "005", "009", "013", "017", "021", "025", "029", "033", "037",
+                    "041", "045", "049", "053", "057", "061", "065", "069"]:
+        p = Path(datasource_path + "/" + "spoofed" + "/" + id)
+        for filename in p.glob('**/*.bmp'):
+            img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
+            hist = hist = histBin(img, bin)
+            data_SCUT_spoofed.append(["spoofed", img, hist, id])
 
     for synthethic_category in ["spoofed_synthethic_cyclegan",
-                                "spoofed_synthethic_distancegan",      # ignore "spoofed_synthethic_drit",
+                                "spoofed_synthethic_distancegan",
+                                "spoofed_synthethic_drit",
                                 "spoofed_synthethic_stargan-v2"]:
         for variant in ["007"]:
             for fold in ["1", "2", "3", "4", "5"]:
-                p = Path(datasource_path + "/" + synthethic_category + "/" + variant + "/" + fold)
+                p = Path(datasource_path + "/" + synthethic_category + "/" + variant + "/" + fold + "/reference")
                 for filename in p.glob('**/*.png'):
-                    img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
-                    hist = histBin(img, bin)
-                    data_SCUT_007.append(["synthethic", img, hist])
+                    _, tail = os.path.split(filename)
+                    id = tail.split('-', 1)[0]
+                    if id in ["001", "005", "009", "013", "017", "021", "025", "029", "033", "037",
+                    "041", "045", "049", "053", "057", "061", "065", "069"]:
+                        img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
+                        hist = histBin(img, bin)
+                        data_SCUT_007.append(["synthethic", img, hist, id])
         for variant in ["008"]:
             for fold in ["1", "2", "3", "4", "5"]:
-                p = Path(datasource_path + "/" + synthethic_category + "/" + variant + "/" + fold)
+                p = Path(datasource_path + "/" + synthethic_category + "/" + variant + "/" + fold + "/reference")
                 for filename in p.glob('**/*.png'):
-                    img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
-                    hist = histBin(img, bin)
-                    data_SCUT_008.append(["synthethic", img, hist])
+                    _, tail = os.path.split(filename)
+                    id = tail.split('-', 1)[0]
+                    if id in ["001", "005", "009", "013", "017", "021", "025", "029", "033", "037",
+                                   "041", "045", "049", "053", "057", "061", "065", "069"]:
+                        img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
+                        hist = histBin(img, bin)
+                        data_SCUT_008.append(["synthethic", img, hist, id])
 
     return data_SCUT_genuine, data_SCUT_spoofed, data_SCUT_007, data_SCUT_008
 
 
+def loadVERA():
+    # Define the path to the dataset
+    datasource_path = "dataset/IDIAP"
+
+    data_VERA_genuine, data_VERA_spoofed, data_VERA_009 = [], [], []
+
+    # load dataset PLUS
+    p = Path(datasource_path + "/" + "genuine")
+    for filename in p.glob('**/*.png'):
+        _, tail = os.path.split(filename)
+        id = tail.split('_', 1)[0]      #todo: only consider images from 001-109 (not -113)
+        img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
+        hist = histBin(img, bin)
+        data_VERA_genuine.append(["genuine", img, hist, id])
+
+    p = Path(datasource_path + "/" + "spoofed")
+    for filename in p.glob('**/*.png'):
+        _, tail = os.path.split(filename)
+        id = tail.split('_', 1)[0]  # todo: only consider images from 001-109 (not -113)
+        img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
+        hist = hist = histBin(img, bin)
+        data_VERA_spoofed.append(["spoofed", img, hist, id])
+
+    for synthethic_category in ["spoofed_synthethic_cyclegan",
+                                "spoofed_synthethic_distancegan",
+                                "spoofed_synthethic_drit",
+                                "spoofed_synthethic_stargan-v2"]:
+        for variant in ["009"]:
+            for fold in ["1", "2", "3", "4", "5"]:
+                p = Path(datasource_path + "/" + synthethic_category + "/" + variant + "/" + fold)
+                for filename in p.glob('**/*.png'):
+                    _, tail = os.path.split(filename)
+                    tail_front = tail.split('_', 1)[0]
+                    id = tail_front.split('-', 1)[1]
+                    img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
+                    hist = histBin(img, bin)
+                    data_VERA_009.append(["synthethic", img, hist, id])
+
+    return data_VERA_genuine, data_VERA_spoofed, data_VERA_009
 
 # -----------------------------------------------------------------------
 # KNN
@@ -207,8 +259,8 @@ def calculate_patch_variances(image, patch_x, patch_y):
 # METHODEN-AUFRUFE
 # -----------------------------------------------------------------------
 bin = 6
-data_PLUS_genuine, data_PLUS_spoofed, data_PLUS_003, data_PLUS_004 = loadPLUS()
-#data_SCUT_genuine, data_SCUT_spoofed, data_SCUT_007, data_SCUT_008 = loadSCUT()
+#data_PLUS_genuine, data_PLUS_spoofed, data_PLUS_003, data_PLUS_004 = loadPLUS()
+data_SCUT_genuine, data_SCUT_spoofed, data_SCUT_007 = loadVERA()
 
 
 
@@ -218,12 +270,12 @@ data_PLUS_genuine, data_PLUS_spoofed, data_PLUS_003, data_PLUS_004 = loadPLUS()
 # -----------------------------------------------------------------------
 
 def combine_list_with_genuine(list):
-    current_data = data_PLUS_genuine + list
+    current_data = data_SCUT_genuine + list
     return current_data
 
 # combine lists data_PLUS_genuine and data_PLUS_003
 current_data = []
-current_data = combine_list_with_genuine(data_PLUS_003)
+current_data = combine_list_with_genuine(data_SCUT_007)
 
 
 # convert data to numpy array
@@ -243,7 +295,7 @@ histograms = np.array(histograms_list)
 
 # combine lists data_PLUS_genuine and data_PLUS_spoofed
 validation_data = []
-validation_data = data_PLUS_spoofed      #todo: nur genuine rein, die Pendant zu spoofed haben
+validation_data = data_SCUT_spoofed      #todo: nur genuine rein, die Pendant zu spoofed haben
 
 # convert data to numpy array
 validation_labels_list, validation_images_list, validation_histograms_list = [], [], []
