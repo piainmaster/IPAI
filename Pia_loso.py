@@ -190,7 +190,7 @@ def most_common_value(list):
 # -----------------------------------------------------------------------
 def histBin(img, bins):
     if bins < 257:
-        hist = cv2.calcHist([img], [0], None, [bin], [0, bin])
+        hist = cv2.calcHist([img], [0], None, [bin], [0, 256])
         return hist
     else:
         return "Falscher Bin-Wert"
