@@ -9,9 +9,8 @@ from scipy.stats import entropy
 #from skimage.measure import shannon_entropy
 from sklearn.model_selection import LeaveOneOut
 from sklearn.model_selection import LeaveOneGroupOut
-from skimage.measure import shannon_entropy
-import scipy
 
+method = cv2.INTER_LANCZOS4
 
 def loadPLUS():
     # Define the path to the dataset
@@ -122,6 +121,7 @@ def loadSCUT():
 
     return data_SCUT_genuine, data_SCUT_spoofed, data_SCUT_007, data_SCUT_008
 
+
 def loadVERA():
     # Define the path to the dataset
     datasource_path = "dataset/IDIAP"
@@ -175,10 +175,14 @@ def loadVERA():
     return data_VERA_genuine, data_VERA_spoofed, data_VERA_009
 
 
+from skimage.measure import shannon_entropy
+import scipy
+
 
 def combine_list_with_genuine(list):
     current_data = data_genuine + list
     return current_data
+
 
 # -----------------------------------------------------------------------
 # KNN
@@ -326,7 +330,7 @@ data_genuine, data_spoofed, data_VERA_009 = loadVERA()
 
 # to be changed:
 generation_variant = data_VERA_009
-generation_method = "spoofed_synthethic_cyclegan"   #"spoofed_synthethic_distancegan" "spoofed_synthethic_drit" "spoofed_synthethic_stargan-v2"
+generation_method = "spoofed_synthethic_cyclegan" #"spoofed_synthethic_distancegan"  #"spoofed_synthethic_distancegan"#"spoofed_synthethic_drit"  #"spoofed_synthethic_stargan-v2"
 
 data_synthetic = []
 for row in generation_variant:
@@ -337,6 +341,7 @@ for row in generation_variant:
 if len(data_synthetic) < len(data_genuine):
     data_genuine = data_genuine[:(len(data_synthetic))]
     data_spoofed = data_spoofed[:(len(data_synthetic))]
+
 
 # -----------------------------------------------------------------------
 # CURRENT TRAIN DATA
@@ -363,7 +368,7 @@ id = np.array(id_list)
 # -----------------------------------------------------------------------
 # combine lists data_PLUS_genuine and data_PLUS_spoofed
 validation_data = []
-validation_data = data_spoofed
+validation_data = combine_list_with_genuine(data_spoofed)
 
 # convert data to numpy array
 validation_labels_list, validation_images_list, validation_histograms_list, validation_id_list = [], [], [], []
@@ -381,251 +386,125 @@ validation_id = np.array(validation_id_list)
 loo = LeaveOneOut()
 pred_list = []
 
-# -----------------------------------------------------------------------
-# CALCULATE FEATURE VARIANCE
-# -----------------------------------------------------------------------
-
-# calculate feature variance
-variance_list1 = []
-variance_list10 = []
-variance_list20 = []
-variance_list30 = []
-variance_list40 = []
-variance_list50 = []
-variance_list100 = []
-
-#note: these patches divide image in vertical stripes
-for img in range(len(images)):
-    #global variance
-    variances1 = calculate_variances(images[img], 1)
-    variance_list1.append([labels[img], variances1])
-    #variance with 10 patches
-    variances10 = calculate_variances(images[img], 10)
-    variance_list10.append([labels[img], variances10])
-    #variance with 20 patches
-    """
-    variances20 = calculate_variances(images[img], 20)
-    variance_list20.append([labels[img], variances20])
-    #variance with 30 patches
-    variances30 = calculate_variances(images[img], 30)
-    variance_list30.append([labels[img], variances30])
-    #variance with 40 patches
-    variances40 = calculate_variances(images[img], 40)
-    variance_list40.append([labels[img], variances40])
-    #variance with 50 patches
-    variances50 = calculate_variances(images[img], 50)
-    variance_list50.append([labels[img], variances50])
-    #variance with 100 patches
-    variances100 = calculate_variances(images[img], 100)
-    variance_list100.append([labels[img], variances100])
-
-
-variance_list10x10 = []
-variance_list20x20 = []
-variance_list30x30 = []
-variance_list40x40 = []
-variance_list50x50 = []
-variance_list70x70 = []
-variance_list100x100 = []
-variance_list100x200 = []
-
-#note: these patches divide in a x b sized patches
-for img in range(len(images)):
-    #variance with 10x10 patches
-    variances10x10 = calculate_patch_variances(images[img], 10, 10)
-    variance_list10x10.append([labels[img], variances10x10])
-    #variance with 20x20 patches
-    variances20x20 = calculate_patch_variances(images[img], 20, 20)
-    variance_list20x20.append([labels[img], variances20x20])
-    #variance with 30x30 patches
-    variances30x30 = calculate_patch_variances(images[img], 30, 30)
-    variance_list30x30.append([labels[img], variances30x30])
-    #variance with 40x40 patches
-    variances40x40 = calculate_patch_variances(images[img], 40, 40)
-    variance_list40x40.append([labels[img], variances40x40])
-    #variance with 50x50 patches
-    variances50x50 = calculate_patch_variances(images[img], 50, 50)
-    variance_list50x50.append([labels[img], variances50x50])
-    # variance with 70x70 patches
-    variances70x70 = calculate_patch_variances(images[img], 70, 70)
-    variance_list70x70.append([labels[img], variances70x70])
-    #variance with 100x100 patches
-    variances100x100 = calculate_patch_variances(images[img], 100, 100)
-    variance_list100x100.append([labels[img], variances100x100])
-    #variance with 100x200 patches
-    variances100x200 = calculate_patch_variances(images[img], 100, 200)
-    variance_list100x200.append([labels[img], variances100x200])
-    """
-
-for k_knn in [3]:
-
-    correct_variance1_preds = 0
-    correct_variance10_preds = 0
-    correct_variance20_preds = 0
-    correct_variance30_preds = 0
-    correct_variance40_preds = 0
-    correct_variance50_preds = 0
-    correct_variance100_preds = 0
-
-    correct_variance10x10_preds = 0
-    correct_variance20x20_preds = 0
-    correct_variance30x30_preds = 0
-    correct_variance40x40_preds = 0
-    correct_variance50x50_preds = 0
-    correct_variance70x70_preds = 0
-    correct_variance100x100_preds = 0
-    correct_variance100x200_preds = 0
+for k_knn in [3, 5, 7, 9]:
+    correct_ed_preds = 0
+    correct_it_preds = 0
+    correct_smd_preds = 0
 
     for i, (train_index, test_index) in enumerate(loo.split(validation_images)):
         current_id = validation_id[test_index]
 
-        test_variance1 = [validation_labels[test_index][0],
-                          calculate_variances(validation_images[test_index], num_frames=1)]
-        variance1_distances = []
-        test_variance10 = [validation_labels[test_index][0], calculate_variances(validation_images[test_index][0], 10)]
-        variance10_distances = []
-        """
-        test_variance20 = [validation_labels[test_index][0], calculate_variances(validation_images[test_index][0], 20)]
-        variance20_distances = []
-        test_variance30 = [validation_labels[test_index][0], calculate_variances(validation_images[test_index][0], 30)]
-        variance30_distances = []
-        test_variance40 = [validation_labels[test_index][0], calculate_variances(validation_images[test_index][0], 40)]
-        variance40_distances = []
-        test_variance50 = [validation_labels[test_index][0], calculate_variances(validation_images[test_index][0], 50)]
-        variance50_distances = []
-        test_variance100 = [validation_labels[test_index][0],
-                            calculate_variances(validation_images[test_index][0], 100)]
-        variance100_distances = []
-
-        test_variance10x10 = [validation_labels[test_index][0],
-                              calculate_patch_variances(validation_images[test_index][0], 10, 10)]
-        variance10x10_distances = []
-        test_variance20x20 = [validation_labels[test_index][0],
-                              calculate_patch_variances(validation_images[test_index][0], 20, 20)]
-        variance20x20_distances = []
-        test_variance30x30 = [validation_labels[test_index][0],
-                              calculate_patch_variances(validation_images[test_index][0], 30, 30)]
-        variance30x30_distances = []
-        test_variance40x40 = [validation_labels[test_index][0],
-                              calculate_patch_variances(validation_images[test_index][0], 40, 40)]
-        variance40x40_distances = []
-        test_variance50x50 = [validation_labels[test_index][0],
-                              calculate_patch_variances(validation_images[test_index][0], 50, 50)]
-        variance50x50_distances = []
-        test_variance70x70 = [validation_labels[test_index][0],
-                              calculate_patch_variances(validation_images[test_index][0], 70, 70)]
-        variance70x70_distances = []
-        test_variance100x100 = [validation_labels[test_index][0],
-                                calculate_patch_variances(validation_images[test_index][0], 100, 100)]
-        variance100x100_distances = []
-        test_variance100x200 = [validation_labels[test_index][0],
-                                calculate_patch_variances(validation_images[test_index][0], 100, 200)]
-        variance100x200_distances = []"""
-
+        # intersection distance (runs fast)
+        it_distance = []
         for j in range(len(labels)):
-            variance1_distances.append([variance_list1[j][0], abs(variance_list1[j][1][0] - test_variance1[1][0])])
-            variance10_distances.append(
-                [variance_list10[j][0], mean_absolute_difference(variance_list10[j][1], test_variance10[1])])
-            """
-            variance20_distances.append(
-                [variance_list20[j][0], mean_absolute_difference(variance_list20[j][1], test_variance20[1])])
-            variance30_distances.append(
-                [variance_list30[j][0], mean_absolute_difference(variance_list30[j][1], test_variance30[1])])
-            variance40_distances.append(
-                [variance_list40[j][0], mean_absolute_difference(variance_list40[j][1], test_variance40[1])])
-            variance50_distances.append(
-                [variance_list50[j][0], mean_absolute_difference(variance_list50[j][1], test_variance50[1])])
-            variance100_distances.append(
-                [variance_list100[j][0], mean_absolute_difference(variance_list100[j][1], test_variance100[1])])
+            it = intersection_test(histograms[j], validation_histograms[test_index])
+            it_distance.append([labels[j], it])
 
-            variance10x10_distances.append(
-                [variance_list10x10[j][0], mean_absolute_difference(variance_list10x10[j][1], test_variance10x10[1])])
-            variance20x20_distances.append(
-                [variance_list20x20[j][0], mean_absolute_difference(variance_list20x20[j][1], test_variance20x20[1])])
-            variance30x30_distances.append(
-                [variance_list30x30[j][0], mean_absolute_difference(variance_list30x30[j][1], test_variance30x30[1])])
-            variance40x40_distances.append(
-                [variance_list40x40[j][0], mean_absolute_difference(variance_list40x40[j][1], test_variance40x40[1])])
-            variance50x50_distances.append(
-                [variance_list50x50[j][0], mean_absolute_difference(variance_list50x50[j][1], test_variance50x50[1])])
-            variance70x70_distances.append(
-                [variance_list70x70[j][0], mean_absolute_difference(variance_list70x70[j][1], test_variance70x70[1])])
-            variance100x100_distances.append([variance_list100x100[j][0],
-                                              mean_absolute_difference(variance_list100x100[j][1],
-                                                                       test_variance100x100[1])])
-            variance100x200_distances.append([variance_list100x200[j][0],
-                                              mean_absolute_difference(variance_list100x200[j][1],
-                                                                       test_variance100x200[1])])"""
+        # euclidian distance
+        ed_distance = []
+        for j in range(len(labels)):
+            ed = euclidean_distance_test(histograms[j], validation_histograms[test_index])
+            ed_distance.append([labels[j], ed])
 
-        # prediction for current test image
-        if (knncalc(k_knn, variance1_distances) == 'genuine' and test_variance1[0] == 'genuine') or (
-                knncalc(k_knn, variance1_distances) != 'genuine' and test_variance1[
-            0] != 'genuine'): correct_variance1_preds += 1
-        if (knncalc(k_knn, variance10_distances) == 'genuine' and test_variance10[0] == 'genuine') or (
-                knncalc(k_knn, variance10_distances) == 'synthethic' and test_variance10[
-            0] == 'spoofed'): correct_variance10_preds += 1
-        """
-        if knncalc(k_knn, variance20_distances) == 'genuine' and test_variance20[0] == 'genuine' or knncalc(k_knn,
-                                                                                                            variance20_distances) == 'synthethic' and \
-                test_variance20[0] == 'spoofed': correct_variance20_preds += 1
-        if knncalc(k_knn, variance30_distances) == 'genuine' and test_variance30[0] == 'genuine' or knncalc(k_knn,
-                                                                                                            variance30_distances) == 'synthethic' and \
-                test_variance30[0] == 'spoofed': correct_variance30_preds += 1
-        if knncalc(k_knn, variance40_distances) == 'genuine' and test_variance40[0] == 'genuine' or knncalc(k_knn,
-                                                                                                            variance40_distances) == 'synthethic' and \
-                test_variance40[0] == 'spoofed': correct_variance40_preds += 1
-        if knncalc(k_knn, variance50_distances) == 'genuine' and test_variance50[0] == 'genuine' or knncalc(k_knn,
-                                                                                                            variance50_distances) == 'synthethic' and \
-                test_variance50[0] == 'spoofed': correct_variance50_preds += 1
-        if knncalc(k_knn, variance100_distances) == 'genuine' and test_variance100[0] == 'genuine' or knncalc(k_knn,
-                                                                                                              variance100_distances) == 'synthethic' and \
-                test_variance100[0] == 'spoofed': correct_variance100_preds += 1
+        # sum of manhattan distances
+        smd_distance = []
+        for j in range(len(labels)):
+            smd = sum_manhattan_distance_test(histograms[j], validation_histograms[test_index])
+            smd_distance.append([labels[j], smd])
 
-        if (knncalc(k_knn, variance10x10_distances) == 'genuine' and test_variance10x10[0] == 'genuine') or (
-                knncalc(k_knn, variance10x10_distances) == 'synthethic' and test_variance10x10[
-            0] == 'spoofed'): correct_variance10x10_preds += 1
-        if knncalc(k_knn, variance20x20_distances) == 'genuine' and test_variance20x20[0] == 'genuine' or knncalc(k_knn,
-                                                                                                                  variance20x20_distances) == 'synthethic' and \
-                test_variance20x20[0] == 'spoofed': correct_variance20x20_preds += 1
-        if knncalc(k_knn, variance30x30_distances) == 'genuine' and test_variance30x30[0] == 'genuine' or knncalc(k_knn,
-                                                                                                                  variance30x30_distances) == 'synthethic' and \
-                test_variance30x30[0] == 'spoofed': correct_variance30x30_preds += 1
-        if knncalc(k_knn, variance40x40_distances) == 'genuine' and test_variance40x40[0] == 'genuine' or knncalc(k_knn,
-                                                                                                                  variance40x40_distances) == 'synthethic' and \
-                test_variance40x40[0] == 'spoofed': correct_variance40x40_preds += 1
-        if knncalc(k_knn, variance50x50_distances) == 'genuine' and test_variance50x50[0] == 'genuine' or knncalc(k_knn,
-                                                                                                                  variance50x50_distances) == 'synthethic' and \
-                test_variance50x50[0] == 'spoofed': correct_variance50x50_preds += 1
-        if knncalc(k_knn, variance70x70_distances) == 'genuine' and test_variance70x70[0] == 'genuine' or knncalc(k_knn,
-                                                                                                                  variance70x70_distances) == 'synthethic' and \
-                test_variance70x70[0] == 'spoofed': correct_variance70x70_preds += 1
-        if knncalc(k_knn, variance100x100_distances) == 'genuine' and test_variance100x100[0] == 'genuine' or knncalc(
-            k_knn, variance100x100_distances) == 'synthethic' and test_variance100x100[
-            0] == 'spoofed': correct_variance100x100_preds += 1
-        if knncalc(k_knn, variance100x200_distances) == 'genuine' and test_variance100x200[0] == 'genuine' or knncalc(
-            k_knn, variance100x200_distances) == 'synthethic' and test_variance100x200[
-            0] == 'spoofed': correct_variance100x200_preds += 1"""
+        # pred_em = knncalc(k_knn, em_distance)
+        pred_it = knncalc(k_knn, it_distance)
+        pred_ed = knncalc(k_knn, ed_distance)
+        pred_smd = knncalc(k_knn, smd_distance)
+
+        # pred_hist_combined = []
+        # pred_hist_combined.append([pred_it, pred_ed, pred_smd])
+        # pred_hist_combined_value = most_common_value(pred_hist_combined)
+
+        if pred_it == 'genuine' and validation_labels[test_index][0] == 'genuine' or pred_it != 'genuine' and \
+                validation_labels[test_index][0] != 'genuine':
+            correct_it_preds += 1
+
+        if pred_ed == 'genuine' and validation_labels[test_index][0] == 'genuine' or pred_ed != 'genuine' and \
+                validation_labels[test_index][0] != 'genuine':
+            correct_ed_preds += 1
+
+        if pred_smd == 'genuine' and validation_labels[test_index][0] == 'genuine' or pred_smd != 'genuine' and \
+                validation_labels[test_index][0] != 'genuine':
+            correct_smd_preds += 1
 
     # -----------------------------------------------------------------------
     # OUTPUT RESULTS
     # -----------------------------------------------------------------------
+    print(f'Leave One Out')
     total = len(validation_labels)
     print(f'Total number of samples: {str(total)}')
-    print(f'Classification results \nVariances with knn {k_knn}')
+    print(f'Classification results \nVariances with knn {k_knn} and bins {bin}')
+    # print(f'Accuracy em: {correct_em_preds / total * 100:.2f}%')
+    print(f'Accuracy it: {correct_it_preds / total * 100:.2f}%')
+    print(f'Accuracy ed: {correct_ed_preds / total * 100:.2f}%')
+    print(f'Accuracy smd: {correct_smd_preds / total * 100:.2f}%')
+    # print(f"Accuracy combined of hist: {correct_hist_combined_preds / total*100:.2f}%")
 
-    print(f'Accuracy global variance: {correct_variance1_preds / total * 100:.3f}%')
-    print(f'Accuracy variance with 10 patches: {correct_variance10_preds / total * 100:.3f}%')
-    """
-    print(f'Accuracy variance with 20 patches: {correct_variance20_preds / total * 100:.3f}%')
-    print(f'Accuracy variance with 30 patches: {correct_variance30_preds / total * 100:.3f}%')
-    print(f'Accuracy variance with 40 patches: {correct_variance40_preds / total * 100:.3f}%')
-    print(f'Accuracy variance with 50 patches: {correct_variance50_preds / total * 100:.3f}%')
-    print(f'Accuracy variance with 100 patches: {correct_variance100_preds / total * 100:.3f}%')
-    print(f'Accuracy variance with 10x10 patches: {correct_variance10x10_preds / total * 100:.3f}%')
-    print(f'Accuracy variance with 20x20 patches: {correct_variance20x20_preds / total * 100:.3f}%')
-    print(f'Accuracy variance with 30x30 patches: {correct_variance30x30_preds / total * 100:.3f}%')
-    print(f'Accuracy variance with 40x40 patches: {correct_variance40x40_preds / total * 100:.3f}%')
-    print(f'Accuracy variance with 50x50 patches: {correct_variance50x50_preds / total * 100:.3f}%')
-    print(f'Accuracy variance with 70x70 patches: {correct_variance70x70_preds / total * 100:.3f}%')
-    print(f'Accuracy variance with 100x100 patches: {correct_variance100x100_preds / total * 100:.3f}%')
-    print(f'Accuracy variance with 100x200 patches: {correct_variance100x200_preds / total * 100:.3f}%')"""
+    for k_knn in [3, 5, 7, 9]:
+        correct_ed_preds = 0
+        correct_it_preds = 0
+        correct_smd_preds = 0
+
+        for i, (train_index, test_index) in enumerate(loo.split(validation_images)):
+            current_id = validation_id[test_index]
+
+            # intersection distance (runs fast)
+            it_distance = []
+            for j in range(len(labels)):
+                if (current_id != id[j]):
+                    it = intersection_test(histograms[j], validation_histograms[test_index])
+                    it_distance.append([labels[j], it])
+
+            # euclidian distance
+            ed_distance = []
+            for j in range(len(labels)):
+                if (current_id != id[j]):
+                    ed = euclidean_distance_test(histograms[j], validation_histograms[test_index])
+                    ed_distance.append([labels[j], ed])
+
+            # sum of manhattan distances
+            smd_distance = []
+            for j in range(len(labels)):
+                if (current_id != id[j]):
+                    smd = sum_manhattan_distance_test(histograms[j], validation_histograms[test_index])
+                    smd_distance.append([labels[j], smd])
+
+            # pred_em = knncalc(k_knn, em_distance)
+            pred_it = knncalc(k_knn, it_distance)
+            pred_ed = knncalc(k_knn, ed_distance)
+            pred_smd = knncalc(k_knn, smd_distance)
+
+            # pred_hist_combined = []
+            # pred_hist_combined.append([pred_it, pred_ed, pred_smd])
+            # pred_hist_combined_value = most_common_value(pred_hist_combined)
+
+            if pred_it == 'genuine' and validation_labels[test_index][0] == 'genuine' or pred_it != 'genuine' and \
+                    validation_labels[test_index][0] != 'genuine':
+                correct_it_preds += 1
+
+            if pred_ed == 'genuine' and validation_labels[test_index][0] == 'genuine' or pred_ed != 'genuine' and \
+                    validation_labels[test_index][0] != 'genuine':
+                correct_ed_preds += 1
+
+            if pred_smd == 'genuine' and validation_labels[test_index][0] == 'genuine' or pred_smd != 'genuine' and \
+                    validation_labels[test_index][0] != 'genuine':
+                correct_smd_preds += 1
+
+        # -----------------------------------------------------------------------
+        # OUTPUT RESULTS
+        # -----------------------------------------------------------------------
+        print(f'Leave One Sample Out')
+        total = len(validation_labels)
+        print(f'Total number of samples: {str(total)}')
+        print(f'Classification results \nVariances with knn {k_knn} and bins {bin}')
+        # print(f'Accuracy em: {correct_em_preds / total * 100:.2f}%')
+        print(f'Accuracy it: {correct_it_preds / total * 100:.2f}%')
+        print(f'Accuracy ed: {correct_ed_preds / total * 100:.2f}%')
+        print(f'Accuracy smd: {correct_smd_preds / total * 100:.2f}%')
+        # print(f"Accuracy combined of hist: {correct_hist_combined_preds / total*100:.2f}%")
