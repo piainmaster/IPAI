@@ -143,6 +143,8 @@ def loadVERA():
 
     return data_VERA_genuine, data_VERA_spoofed, data_VERA_009
 
+
+
 # -----------------------------------------------------------------------
 # KNN
 # -----------------------------------------------------------------------
@@ -260,8 +262,8 @@ def calculate_patch_variances(image, patch_x, patch_y):
 # -----------------------------------------------------------------------
 bin = 6
 #data_PLUS_genuine, data_PLUS_spoofed, data_PLUS_003, data_PLUS_004 = loadPLUS()
-data_SCUT_genuine, data_SCUT_spoofed, data_SCUT_007 = loadVERA()
-
+data_VERA_genuine, data_VERA_spoofed, data_VERA_009 = loadVERA()
+#data_SCUT_genuine, data_SCUT_spoofed, data_SCUT_007,  data_SCUT_008 = loadSCUT()
 
 
 
@@ -270,12 +272,12 @@ data_SCUT_genuine, data_SCUT_spoofed, data_SCUT_007 = loadVERA()
 # -----------------------------------------------------------------------
 
 def combine_list_with_genuine(list):
-    current_data = data_SCUT_genuine + list
+    current_data = data_VERA_genuine + list
     return current_data
 
 # combine lists data_PLUS_genuine and data_PLUS_003
 current_data = []
-current_data = combine_list_with_genuine(data_SCUT_007)
+current_data = combine_list_with_genuine(data_VERA_009)
 
 
 # convert data to numpy array
@@ -295,7 +297,7 @@ histograms = np.array(histograms_list)
 
 # combine lists data_PLUS_genuine and data_PLUS_spoofed
 validation_data = []
-validation_data = data_SCUT_spoofed      #todo: nur genuine rein, die Pendant zu spoofed haben
+validation_data = data_VERA_spoofed      #todo: nur genuine rein, die Pendant zu spoofed haben
 
 # convert data to numpy array
 validation_labels_list, validation_images_list, validation_histograms_list = [], [], []
