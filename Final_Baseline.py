@@ -106,6 +106,16 @@ def loadSCUT():
                         hist = histBin(img, bin)
                         hist = histBin(img, bin)
                         data_SCUT_007.append([synthethic_category, img, hist, id])
+                for filename in p.glob('**/*.jpg'):
+                    _, tail = os.path.split(filename)
+                    id = tail.split('-', 1)[0]
+                    if id in ["001", "005", "009", "013", "017", "021", "025", "029", "033", "037",
+                              "041", "045", "049", "053", "057", "061", "065", "069"]:
+                        img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
+                        img = cv2.resize(img, (639, 287), interpolation=method)
+                        hist = histBin(img, bin)
+                        hist = histBin(img, bin)
+                        data_SCUT_007.append([synthethic_category, img, hist, id])
         for variant in ["008"]:
             for fold in ["1", "2", "3", "4", "5"]:
                 p = Path(datasource_path + "/" + synthethic_category + "/" + variant + "/" + fold + "/reference")
@@ -114,6 +124,15 @@ def loadSCUT():
                     id = tail.split('-', 1)[0]
                     if id in ["001", "005", "009", "013", "017", "021", "025", "029", "033", "037",
                                    "041", "045", "049", "053", "057", "061", "065", "069"]:
+                        img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
+                        img = cv2.resize(img, (639, 287), interpolation=method)
+                        hist = histBin(img, bin)
+                        data_SCUT_008.append([synthethic_category, img, hist, id])
+                for filename in p.glob('**/*.jpg'):
+                    _, tail = os.path.split(filename)
+                    id = tail.split('-', 1)[0]
+                    if id in ["001", "005", "009", "013", "017", "021", "025", "029", "033", "037",
+                              "041", "045", "049", "053", "057", "061", "065", "069"]:
                         img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
                         img = cv2.resize(img, (639, 287), interpolation=method)
                         hist = histBin(img, bin)
