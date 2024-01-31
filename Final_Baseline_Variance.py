@@ -334,25 +334,19 @@ def calculate_patch_variances(image, patch_x, patch_y):
 # -----------------------------------------------------------------------
 method = cv2.INTER_LANCZOS4
 bin = 6
+
+
+data_genuine, data_spoofed, data_PLUS_003, data_PLUS_004 = loadPLUS()
+#data_genuine, data_spoofed, data_VERA_009 = loadVERA()
+#data_genuine, data_spoofed, data_SCUT_007,  data_SCUT_008 = loadSCUT()
+
 k_knn = 3
 
-#data_genuine, data_spoofed, data_PLUS_003, data_PLUS_004 = loadPLUS()
-#data_genuine, data_spoofed, data_VERA_009 = loadVERA()
-data_genuine, data_spoofed, data_SCUT_007,  data_SCUT_008 = loadSCUT()
-
-"""# to be changed:
-generation_variant = data_SCUT_007
-generation_method = "spoofed_synthethic_cyclegan"   #"spoofed_synthethic_distancegan" "spoofed_synthethic_drit" "spoofed_synthethic_stargan-v2"
-
-data_synthetic = []
-for row in generation_variant:
-    if row[0] == generation_method:
-        row[0] = "synthetic"
-        data_synthetic.append(row)
-"""
 
 if len(data_spoofed) < len(data_genuine):
     data_genuine = data_genuine[:(len(data_spoofed))]
+elif len(data_genuine) < len(data_spoofed):
+    data_spoofed = data_spoofed[:(len(data_genuine))]
 
 
 # -----------------------------------------------------------------------
@@ -404,110 +398,73 @@ pred_list = []
 # -----------------------------------------------------------------------
 # CALCULATE FEATURE ENTROPY
 # -----------------------------------------------------------------------
-
-# calculate feature entropy
-entropy_list1 = []
-
-#note: these patches divide image in vertical stripes
-for img in range(len(images)):
-    #global entropy
-    entropies1 = calculate_entropies(images[img], 1)
-    entropy_list1.append([labels[img], entropies1])
-
-
-entropy_list10x10 = []
+variance_list40x40 = []
 
 #note: these patches divide in a x b sized patches
 for img in range(len(images)):
-    #entropy with 10x10 patches
-    entropies10x10 = calculate_patch_entropies(images[img], 10, 10)
-    entropy_list10x10.append([labels[img], entropies10x10])
-
+    #variance with 40x40 patches
+    variances40x40 = calculate_patch_variances(images[img], 40, 40)
+    variance_list40x40.append([labels[img], variances40x40])
 
 
 # -----------------------------------------------------------------------
 # LEAVE ONE OUT
 # -----------------------------------------------------------------------
-correct_entropy1_preds = 0
-correct_entropy10x10_preds = 0
+correct_variance40x40_preds = 0
 
-for i, (train_index, test_index) in loo.split(validation_images):
-    current_id = validation_id[test_index]
+for train_index, test_index in loo.split(images):
+    current_id = id[test_index]
 
-    test_entropy1 = [validation_labels[test_index][0],
-                     calculate_entropies(validation_images[test_index], num_frames=1)]
-    entropy1_distances = []
-
-    test_entropy10x10 = [validation_labels[test_index][0],
-                         calculate_patch_entropies(validation_images[test_index][0], 10, 10)]
-    entropy10x10_distances = []
+    test_variance40x40 = [labels[test_index][0],
+                         calculate_patch_variances(images[test_index][0], 40, 40)]
+    variance40x40_distances = []
 
     for j in train_index:
-        entropy1_distances.append([entropy_list1[j][0], abs(entropy_list1[j][1][0] - test_entropy1[1][0])])
-
-        entropy10x10_distances.append(
-            [entropy_list10x10[j][0], mean_absolute_difference(entropy_list10x10[j][1], test_entropy10x10[1])])
+        variance40x40_distances.append(
+            [variance_list40x40[j][0], mean_absolute_difference(variance_list40x40[j][1], test_variance40x40[1])])
 
     # prediction for current test image
-    if (knncalc(k_knn, entropy1_distances) == 'genuine' and test_entropy1[0] == 'genuine') or (
-            knncalc(k_knn, entropy1_distances) == 'synthethic' and test_entropy1[
-        0] == 'spoofed'): correct_entropy1_preds += 1
-
-    if (knncalc(k_knn, entropy10x10_distances) == 'genuine' and test_entropy10x10[0] == 'genuine') or (
-            knncalc(k_knn, entropy10x10_distances) == 'synthethic' and test_entropy10x10[
-        0] == 'spoofed'): correct_entropy10x10_preds += 1
+    if (knncalc(k_knn, variance40x40_distances) == 'genuine' and test_variance40x40[0] == 'genuine') or (
+            knncalc(k_knn, variance40x40_distances) != 'genuine' and test_variance40x40[
+        0] != 'genuine'): correct_variance40x40_preds += 1
 
 # -----------------------------------------------------------------------
 # OUTPUT RESULTS
 # -----------------------------------------------------------------------
-total = len(validation_labels)
+total = len(labels)
+print(f'Leave One Out')
 print(f'Total number of samples: {str(total)}')
-print(f'Classification results \nentropies with knn {k_knn}')
-
-print(f'Accuracy global entropy: {correct_entropy1_preds / total * 100:.3f}%')
-print(f'Accuracy entropy with 10x10 patches: {correct_entropy10x10_preds / total * 100:.3f}%')
+print(f'Classification results \nvariances with knn {k_knn}')
+print(f'Accuracy variance with 40x40 patches: {correct_variance40x40_preds / total * 100:.3f}%')
 
 
 # -----------------------------------------------------------------------
 # LEAVE ONE SUBJECT OUT
 # -----------------------------------------------------------------------
+correct_variance40x40_preds = 0
 
-correct_entropy1_preds = 0
-correct_entropy10x10_preds = 0
+for train_index, test_index in loo.split(images):
+    current_id = id[test_index]
 
-for i, (train_index, test_index) in enumerate(loo.split(validation_images)):
-    current_id = validation_id[test_index]
-
-    test_entropy1 = [validation_labels[test_index][0],
-                     calculate_entropies(validation_images[test_index], num_frames=1)]
-    entropy1_distances = []
-    test_entropy10x10 = [validation_labels[test_index][0],
-                         calculate_patch_entropies(validation_images[test_index][0], 10, 10)]
-    entropy10x10_distances = []
+    test_variance40x40 = [labels[test_index][0],
+                         calculate_patch_variances(images[test_index][0], 40, 40)]
+    variance40x40_distances = []
 
     for j in train_index:
         if (current_id != id[j]):
-            entropy1_distances.append([entropy_list1[j][0], abs(entropy_list1[j][1][0] - test_entropy1[1][0])])
-
-            entropy10x10_distances.append(
-                [entropy_list10x10[j][0], mean_absolute_difference(entropy_list10x10[j][1], test_entropy10x10[1])])
+            variance40x40_distances.append(
+                [variance_list40x40[j][0], mean_absolute_difference(variance_list40x40[j][1], test_variance40x40[1])])
 
     # prediction for current test image
-    if (knncalc(k_knn, entropy1_distances) == 'genuine' and test_entropy1[0] == 'genuine') or (
-            knncalc(k_knn, entropy1_distances) == 'synthethic' and test_entropy1[
-        0] == 'spoofed'): correct_entropy1_preds += 1
-
-    if (knncalc(k_knn, entropy10x10_distances) == 'genuine' and test_entropy10x10[0] == 'genuine') or (
-            knncalc(k_knn, entropy10x10_distances) == 'synthethic' and test_entropy10x10[
-        0] == 'spoofed'): correct_entropy10x10_preds += 1
+    if (knncalc(k_knn, variance40x40_distances) == 'genuine' and test_variance40x40[0] == 'genuine') or (
+            knncalc(k_knn, variance40x40_distances) != 'genuine' and test_variance40x40[
+        0] != 'genuine'): correct_variance40x40_preds += 1
 
 # -----------------------------------------------------------------------
 # OUTPUT RESULTS
 # -----------------------------------------------------------------------
-total = len(validation_labels)
+total = len(labels)
+print(f'Leave One Subject Out')
 print(f'Total number of samples: {str(total)}')
-print(f'Classification results \nentropys with knn {k_knn}')
-
-print(f'Accuracy global entropy: {correct_entropy1_preds / total * 100:.3f}%')
-
-print(f'Accuracy entropy with 10x10 patches: {correct_entropy10x10_preds / total * 100:.3f}%')
+print(f'Classification results \nvariances with knn {k_knn}')
+print(f'Accuracy variance with 40x40 patches: {correct_variance40x40_preds / total * 100:.3f}%')
