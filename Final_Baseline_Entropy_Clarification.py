@@ -11,7 +11,7 @@ from scipy.stats import entropy
 from sklearn.model_selection import LeaveOneOut
 from sklearn.model_selection import LeaveOneGroupOut
 
-method = cv2.INTER_LANCZOS4
+
 
 def loadPLUS():
     # Define the path to the dataset
@@ -153,18 +153,17 @@ def loadSCUT():
 
     return data_SCUT_genuine, data_SCUT_spoofed, data_SCUT_007, data_SCUT_008
 
-
 def loadVERA():
     # Define the path to the dataset
     datasource_path = "dataset/IDIAP"
 
     data_VERA_genuine, data_VERA_spoofed, data_VERA_009 = [], [], []
 
-    # load dataset VERA
+    # load dataset PLUS
     p = Path(datasource_path + "/" + "genuine")
     for filename in p.glob('**/*.png'):
         _, tail = os.path.split(filename)
-        id = tail.split('_', 1)[0]  # todo: only consider images from 001-109 (not -113)
+        id = tail.split('_', 1)[0]      #todo: only consider images from 001-109 (not -113)
         img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
         img = cv2.resize(img, (664, 248), interpolation=method)
         hist = histBin(img, bin)
@@ -176,7 +175,7 @@ def loadVERA():
         id = tail.split('_', 1)[0]  # todo: only consider images from 001-109 (not -113)
         img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
         img = cv2.resize(img, (664, 248), interpolation=method)
-        hist = histBin(img, bin)
+        hist = hist = histBin(img, bin)
         data_VERA_spoofed.append(["spoofed", img, hist, id])
 
     for synthethic_category in ["spoofed_synthethic_cyclegan",
@@ -195,16 +194,8 @@ def loadVERA():
                     hist = histBin(img, bin)
                     data_VERA_009.append([synthethic_category, img, hist, id])
 
-                for filename in p.glob('**/*.jpg'):
-                    _, tail = os.path.split(filename)
-                    tail_front = tail.split('_', 1)[0]
-                    id = tail_front.split('-', 1)[1]
-                    img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
-                    img = cv2.resize(img, (664, 248), interpolation=method)
-                    hist = histBin(img, bin)
-                    data_VERA_009.append([synthethic_category, img, hist, id])
-
     return data_VERA_genuine, data_VERA_spoofed, data_VERA_009
+
 
 
 from skimage.measure import shannon_entropy
@@ -350,19 +341,22 @@ def calculate_patch_variances(image, patch_x, patch_y):
     return variances
 
 
+
 # -----------------------------------------------------------------------
 # METHODEN-AUFRUFE
 # -----------------------------------------------------------------------
 method = cv2.INTER_LANCZOS4
 bin = 6
+k_knn = 5
+
 
 #data_genuine, data_spoofed, data_PLUS_003, data_PLUS_004 = loadPLUS()
 #data_genuine, data_spoofed, data_VERA_009 = loadVERA()
 data_genuine, data_spoofed, data_SCUT_007,  data_SCUT_008 = loadSCUT()
 
 # to be changed:
-generation_variant = data_SCUT_007
-generation_method = "spoofed_synthethic_drit" #"spoofed_synthethic_cyclegan"  #"spoofed_synthethic_distancegan"#"spoofed_synthethic_drit"  #"spoofed_synthethic_stargan-v2"
+generation_variant = data_SCUT_008
+generation_method = "spoofed_synthethic_cyclegan" #"spoofed_synthethic_cyclegan"  #"spoofed_synthethic_distancegan"#"spoofed_synthethic_drit"  #"spoofed_synthethic_stargan-v2"
 
 data_synthetic = []
 for row in generation_variant:
@@ -413,8 +407,8 @@ data_synthetic = z_balanced[:270]
 # CURRENT TRAIN DATA
 # -----------------------------------------------------------------------
 # combine genuine data with synthetic data
-current_data = []
-current_data = combine_list_with_genuine(data_synthetic)
+current_data=[]
+current_data = combine_list_with_genuine(data_spoofed)
 
 # convert data to numpy array
 labels_list, images_list, histograms_list, id_list = [], [], [], []
@@ -429,6 +423,8 @@ images = np.array(images_list)
 histograms = np.array(histograms_list)
 id = np.array(id_list)
 
+
+"""
 # -----------------------------------------------------------------------
 # CURRENT TEST DATA
 # -----------------------------------------------------------------------
@@ -448,104 +444,81 @@ validation_labels = np.array(validation_labels_list)
 validation_images = np.array(validation_images_list)
 validation_histograms = np.array(validation_histograms_list)
 validation_id = np.array(validation_id_list)
+"""
 
 loo = LeaveOneOut()
 pred_list = []
 
 # -----------------------------------------------------------------------
-# CALCULATE FEATURE VARIANCE
+# CALCULATE FEATURE ENTROPY
 # -----------------------------------------------------------------------
-variance_list40x40 = []
+entropy_list50x50 = []
 
 #note: these patches divide in a x b sized patches
 for img in range(len(images)):
-    #variance with 40x40 patches
-    variances40x40 = calculate_patch_variances(images[img], 40, 40)
-    variance_list40x40.append([labels[img], variances40x40])
-
-k_knn = 3
-
-#correct_variance40x40_preds = 0
-gg_preds = 0
-gs_preds = 0
-sg_preds = 0
-ss_preds = 0
-
-correct_variance40x40_preds = 0
+    #entropy with 50x50 patches
+    entropies50x50 = calculate_patch_entropies(images[img], 50, 50)
+    entropy_list50x50.append([labels[img], entropies50x50])
 
 
-for i, (train_index, test_index) in enumerate(loo.split(validation_images)):
-    current_id = validation_id[test_index]
+# -----------------------------------------------------------------------
+# LEAVE ONE OUT
+# -----------------------------------------------------------------------
+correct_entropy50x50_preds = 0
 
-    test_variance40x40 = [validation_labels[test_index][0],
-                          calculate_patch_variances(validation_images[test_index][0], 40, 40)]
-    variance40x40_distances = []
+for train_index, test_index in loo.split(images):
+    current_id = id[test_index]
 
-    for j in range(len(labels)):
-        variance40x40_distances.append(
-            [variance_list40x40[j][0], mean_absolute_difference(variance_list40x40[j][1], test_variance40x40[1])])
+    test_entropy50x50 = [labels[test_index][0],
+                         calculate_patch_entropies(images[test_index][0], 50, 50)]
+    entropy50x50_distances = []
+
+    for j in train_index:
+        entropy50x50_distances.append(
+            [entropy_list50x50[j][0], mean_absolute_difference(entropy_list50x50[j][1], test_entropy50x50[1])])
 
     # prediction for current test image
-    pred = knncalc(k_knn, variance40x40_distances)
-    if pred == 'genuine' and test_variance40x40[0] == 'genuine': gg_preds += 1
-    if pred == 'genuine' and test_variance40x40[0] != 'genuine': gs_preds += 1
-    if pred != 'genuine' and test_variance40x40[0] == 'genuine': sg_preds += 1
-    if pred != 'genuine' and test_variance40x40[0] != 'genuine': ss_preds += 1
-
-    # prediction for current test image
-    if knncalc(k_knn, variance40x40_distances) == 'genuine' and test_variance40x40[0] == 'genuine' or knncalc(k_knn,
-                                                                                                              variance40x40_distances) != 'genuine' and \
-            test_variance40x40[0] != 'genuine': correct_variance40x40_preds += 1
-
+    if (knncalc(k_knn, entropy50x50_distances) == 'genuine' and test_entropy50x50[0] == 'genuine') or (
+            knncalc(k_knn, entropy50x50_distances) != 'genuine' and test_entropy50x50[
+        0] != 'genuine'): correct_entropy50x50_preds += 1
 
 # -----------------------------------------------------------------------
 # OUTPUT RESULTS
 # -----------------------------------------------------------------------
+total = len(labels)
 print(f'Leave One Out')
-total = len(validation_labels)
 print(f'Total number of samples: {str(total)}')
-print(f'Classification results \nVariances with knn {k_knn}')
-
-#print(f'Accuracy variance with 40x40 patches: {correct_variance40x40_preds / total * 100:.3f}%')
-print("gg" + str(gg_preds))
-print("gs" + str(gs_preds))
-print("sg" + str(sg_preds))
-print("ss" + str(ss_preds))
-
-print(f'Accuracy variance with 40x40 patches: {correct_variance40x40_preds / total * 100:.3f}%')
-
-
+print(f'Classification results \nentropies with knn {k_knn}')
+print(f'Accuracy entropy with 50x50 patches: {correct_entropy50x50_preds / total * 100:.3f}%')
 
 
 # -----------------------------------------------------------------------
 # LEAVE ONE SUBJECT OUT
 # -----------------------------------------------------------------------
-knn = 3
+correct_entropy50x50_preds = 0
 
-correct_variance40x40_preds = 0
+for train_index, test_index in loo.split(images):
+    current_id = id[test_index]
 
-for i, (train_index, test_index) in enumerate(loo.split(validation_images)):
-    current_id = validation_id[test_index]
+    test_entropy50x50 = [labels[test_index][0],
+                         calculate_patch_entropies(images[test_index][0], 50, 50)]
+    entropy50x50_distances = []
 
-
-    test_variance40x40 = [validation_labels[test_index][0],
-                          calculate_patch_variances(validation_images[test_index][0], 40, 40)]
-    variance40x40_distances = []
-
-    for j in range(len(labels)):
+    for j in train_index:
         if (current_id != id[j]):
-            variance40x40_distances.append([variance_list40x40[j][0], mean_absolute_difference(variance_list40x40[j][1], test_variance40x40[1])])
+            entropy50x50_distances.append(
+                [entropy_list50x50[j][0], mean_absolute_difference(entropy_list50x50[j][1], test_entropy50x50[1])])
 
     # prediction for current test image
-    if knncalc(k_knn, variance40x40_distances) == 'genuine' and test_variance40x40[0] == 'genuine' or knncalc(k_knn, variance40x40_distances) != 'genuine' and \
-            test_variance40x40[0] != 'genuine': correct_variance40x40_preds += 1
+    if (knncalc(k_knn, entropy50x50_distances) == 'genuine' and test_entropy50x50[0] == 'genuine') or (
+            knncalc(k_knn, entropy50x50_distances) != 'genuine' and test_entropy50x50[
+        0] != 'genuine'): correct_entropy50x50_preds += 1
 
 # -----------------------------------------------------------------------
 # OUTPUT RESULTS
 # -----------------------------------------------------------------------
+total = len(labels)
 print(f'Leave One Subject Out')
-total = len(validation_labels)
 print(f'Total number of samples: {str(total)}')
-print(f'Classification results \nVariances with knn {k_knn}')
-
-print(f'Accuracy variance with 40x40 patches: {correct_variance40x40_preds / total * 100:.3f}%')
+print(f'Classification results \nEntropys with knn {k_knn}')
+print(f'Accuracy entropy with 50x50 patches: {correct_entropy50x50_preds / total * 100:.3f}%')

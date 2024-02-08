@@ -1,6 +1,5 @@
 import math
 import os
-from collections import defaultdict
 
 import numpy as np
 import cv2
@@ -72,29 +71,23 @@ def loadSCUT():
     data_SCUT_genuine, data_SCUT_spoofed, data_SCUT_007, data_SCUT_008 = [], [], [], []
 
     # load dataset SCUT
-    for subject_fold in ["001", "005", "009", "013", "017", "021", "025", "029", "033", "037",
+    for id in ["001", "005", "009", "013", "017", "021", "025", "029", "033", "037",
                     "041", "045", "049", "053", "057", "061", "065", "069"]:
-        p = Path(datasource_path + "/" + "genuine" + "/" + subject_fold)
+        p = Path(datasource_path + "/" + "genuine" + "/" + id)
         for filename in p.glob('**/*.bmp'):
             img = cv2.rotate(cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE), cv2.ROTATE_90_CLOCKWISE)
             img = cv2.resize(img, (639, 287), interpolation=method)
             hist = histBin(img, bin)
-            _, tail = os.path.split(filename)
-            id = tail.split('_', 1)[0]
-            finger = tail.split('_')[1]
-            data_SCUT_genuine.append(["genuine", img, hist, id, finger])
+            data_SCUT_genuine.append(["genuine", img, hist, id])
 
-    for subject_fold in ["001", "005", "009", "013", "017", "021", "025", "029", "033", "037",
+    for id in ["001", "005", "009", "013", "017", "021", "025", "029", "033", "037",
                     "041", "045", "049", "053", "057", "061", "065", "069"]:
-        p = Path(datasource_path + "/" + "spoofed" + "/" + subject_fold)
+        p = Path(datasource_path + "/" + "spoofed" + "/" + id)
         for filename in p.glob('**/*.bmp'):
             img = cv2.rotate(cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE), cv2.ROTATE_90_CLOCKWISE)
             img = cv2.resize(img, (639, 287), interpolation=method)
             hist = histBin(img, bin)
-            _, tail = os.path.split(filename)
-            id = tail.split('_', 1)[0]
-            finger = tail.split('_')[1]
-            data_SCUT_spoofed.append(["spoofed", img, hist, id, finger])
+            data_SCUT_spoofed.append(["spoofed", img, hist, id])
 
     for synthethic_category in ["spoofed_synthethic_cyclegan",
                                 "spoofed_synthethic_distancegan",
@@ -105,51 +98,45 @@ def loadSCUT():
                 p = Path(datasource_path + "/" + synthethic_category + "/" + variant + "/" + fold + "/reference")
                 for filename in p.glob('**/*.png'):
                     _, tail = os.path.split(filename)
-                    #subject_fold = tail.split('-', 1)[0]
-                    #if subject_fold in ["1", "5", "9", "13", "17", "21", "25", "29", "33", "37",
-                    #"41", "45", "49", "53", "57", "61", "65", "69"]:
-                    img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
-                    img = cv2.resize(img, (639, 287), interpolation=method)
-                    hist = histBin(img, bin)
-                    id = tail.split('-')[1].split('_')[0]
-                    finger = tail.split('-')[1].split('_')[1]
-                    data_SCUT_007.append([synthethic_category, img, hist, id, finger])
+                    id = tail.split('-', 1)[0]
+                    if id in ["001", "005", "009", "013", "017", "021", "025", "029", "033", "037",
+                    "041", "045", "049", "053", "057", "061", "065", "069"]:
+                        img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
+                        img = cv2.resize(img, (639, 287), interpolation=method)
+                        hist = histBin(img, bin)
+                        hist = histBin(img, bin)
+                        data_SCUT_007.append([synthethic_category, img, hist, id])
                 for filename in p.glob('**/*.jpg'):
                     _, tail = os.path.split(filename)
-                    #subject_fold = tail.split('-', 1)[0]
-                    #if subject_fold in ["1", "5", "9", "13", "17", "21", "25", "29", "33", "37",
-                    #"41", "45", "49", "53", "57", "61", "65", "69"]:
-                    img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
-                    img = cv2.resize(img, (639, 287), interpolation=method)
-                    hist = histBin(img, bin)
-                    id = tail.split('-')[1].split('_')[0]
-                    finger = tail.split('-')[1].split('_')[1]
-                    data_SCUT_007.append([synthethic_category, img, hist, id, finger])
+                    id = tail.split('-', 1)[0]
+                    if id in ["001", "005", "009", "013", "017", "021", "025", "029", "033", "037",
+                              "041", "045", "049", "053", "057", "061", "065", "069"]:
+                        img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
+                        img = cv2.resize(img, (639, 287), interpolation=method)
+                        hist = histBin(img, bin)
+                        hist = histBin(img, bin)
+                        data_SCUT_007.append([synthethic_category, img, hist, id])
         for variant in ["008"]:
             for fold in ["1", "2", "3", "4", "5"]:
                 p = Path(datasource_path + "/" + synthethic_category + "/" + variant + "/" + fold + "/reference")
                 for filename in p.glob('**/*.png'):
                     _, tail = os.path.split(filename)
-                    #subject_fold = tail.split('-', 1)[0]
-                    #if subject_fold in ["1", "5", "9", "13", "17", "21", "25", "29", "33", "37",
-                    #"41", "45", "49", "53", "57", "61", "65", "69"]:
-                    img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
-                    img = cv2.resize(img, (639, 287), interpolation=method)
-                    hist = histBin(img, bin)
-                    id = tail.split('-')[1].split('_')[0]
-                    finger = tail.split('-')[1].split('_')[1]
-                    data_SCUT_008.append([synthethic_category, img, hist, id, finger])
+                    id = tail.split('-', 1)[0]
+                    if id in ["001", "005", "009", "013", "017", "021", "025", "029", "033", "037",
+                                   "041", "045", "049", "053", "057", "061", "065", "069"]:
+                        img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
+                        img = cv2.resize(img, (639, 287), interpolation=method)
+                        hist = histBin(img, bin)
+                        data_SCUT_008.append([synthethic_category, img, hist, id])
                 for filename in p.glob('**/*.jpg'):
                     _, tail = os.path.split(filename)
-                    #subject_fold = tail.split('-', 1)[0]
-                    #if subject_fold in ["1", "5", "9", "13", "17", "21", "25", "29", "33", "37",
-                    #"41", "45", "49", "53", "57", "61", "65", "69"]:
-                    img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
-                    img = cv2.resize(img, (639, 287), interpolation=method)
-                    hist = histBin(img, bin)
-                    id = tail.split('-')[1].split('_')[0]
-                    finger = tail.split('-')[1].split('_')[1]
-                    data_SCUT_008.append([synthethic_category, img, hist, id, finger])
+                    id = tail.split('-', 1)[0]
+                    if id in ["001", "005", "009", "013", "017", "021", "025", "029", "033", "037",
+                              "041", "045", "049", "053", "057", "061", "065", "069"]:
+                        img = cv2.imread(str(filename), cv2.IMREAD_GRAYSCALE)
+                        img = cv2.resize(img, (639, 287), interpolation=method)
+                        hist = histBin(img, bin)
+                        data_SCUT_008.append([synthethic_category, img, hist, id])
 
     return data_SCUT_genuine, data_SCUT_spoofed, data_SCUT_007, data_SCUT_008
 
@@ -160,7 +147,7 @@ def loadVERA():
 
     data_VERA_genuine, data_VERA_spoofed, data_VERA_009 = [], [], []
 
-    # load dataset VERA
+    # load dataset PLUS
     p = Path(datasource_path + "/" + "genuine")
     for filename in p.glob('**/*.png'):
         _, tail = os.path.split(filename)
@@ -276,93 +263,18 @@ def em_dist(img1, img2):
 
 
 # -----------------------------------------------------------------------
-# ENTROPY
-# -----------------------------------------------------------------------
-
-# calculate Entropy with frames--> takes nr of frames and image path and gives back an array of entropies:
-def calculate_entropies(image, num_frames):
-    # Divide the image into frames
-    entropies = []
-    size = image.shape
-    height, width = size[0], size[1]
-
-    frame_size = width // num_frames
-
-    for i in range(num_frames):
-        start_x = i * frame_size
-        end_x = (i + 1) * frame_size
-        frame = image[:, start_x:end_x]
-        entropy = shannon_entropy(frame)
-        entropies.append(entropy)
-
-    return entropies
-
-
-# Function to calculate patch entropies of an image with size patch_x x patch_y with no overlap between the patches
-def calculate_patch_entropies(image, patch_x, patch_y):
-    patch_size = (patch_x, patch_y)
-    entropies = []
-    h, w = image.shape
-    for i in range(0, h, patch_size[0]):
-        for j in range(0, w, patch_size[1]):
-            patch = image[i:i + patch_size[0], j:j + patch_size[1]]
-            entropies.append(shannon_entropy(patch))
-    return entropies
-
-
-# -----------------------------------------------------------------------
-# VARIANCE
-# -----------------------------------------------------------------------
-def mean_absolute_difference(a, b):
-    if len(a) != len(b):
-        raise ValueError("Input lists must have the same length")
-
-    return sum(abs(a_i - b_i) for a_i, b_i in zip(a, b)) / len(a)
-
-
-def calculate_variances(image, num_frames):
-    # Divide the image into frames
-    variances = []
-    size = image.shape
-    height, width = size[0], size[1]
-
-    frame_size = width // num_frames
-
-    for i in range(num_frames):
-        start_x = i * frame_size
-        end_x = (i + 1) * frame_size
-        frame = image[:, start_x:end_x]
-        variance = np.var(frame)
-        variances.append(variance)
-
-    return variances
-
-
-# Function to calculate patch variances of an image with size patch_x x patch_y with no overlap between the patches
-def calculate_patch_variances(image, patch_x, patch_y):
-    patch_size = (patch_x, patch_y)
-    variances = []
-    h, w = image.shape
-    for i in range(0, h, patch_size[0]):
-        for j in range(0, w, patch_size[1]):
-            patch = image[i:i + patch_size[0], j:j + patch_size[1]]
-            variances.append(np.var(patch))
-    return variances
-
-
-# -----------------------------------------------------------------------
 # METHODEN-AUFRUFE
 # -----------------------------------------------------------------------
 method = cv2.INTER_LANCZOS4
 bin = 6
 
-#data_genuine, data_spoofed, data_PLUS_003, data_PLUS_004 = loadPLUS()
+data_genuine, data_spoofed, data_PLUS_003, data_PLUS_004 = loadPLUS()
 #data_genuine, data_spoofed, data_VERA_009 = loadVERA()
-data_genuine, data_spoofed, data_SCUT_007,  data_SCUT_008 = loadSCUT()
+#data_genuine, data_spoofed, data_SCUT_007,  data_SCUT_008 = loadSCUT()
 
 # to be changed:
-generation_variant = data_SCUT_007
-generation_method = "spoofed_synthethic_drit" #"spoofed_synthethic_cyclegan"  #"spoofed_synthethic_distancegan"#"spoofed_synthethic_drit"  #"spoofed_synthethic_stargan-v2"
+generation_variant = data_PLUS_003
+generation_method = "spoofed_synthethic_cyclegan" #"spoofed_synthethic_cyclegan"  #"spoofed_synthethic_distancegan"#"spoofed_synthethic_drit"  #"spoofed_synthethic_stargan-v2"
 
 data_synthetic = []
 for row in generation_variant:
@@ -370,43 +282,9 @@ for row in generation_variant:
         row[0] = "synthetic"
         data_synthetic.append(row)
 
-#balancing
-x_counts = defaultdict(int)
-y_counts = defaultdict(int)
-z_counts = defaultdict(int)
-
-for item in data_genuine: x_counts[(item[3], item[4])] += 1
-for item in data_spoofed: y_counts[(item[3], item[4])] += 1
-for item in data_synthetic: z_counts[(item[3], item[4])] += 1
-
-common_identifiers = set(x_counts.keys()).intersection(y_counts.keys(), z_counts.keys())
-
-x_balanced = []
-y_balanced = []
-z_balanced = []
-
-for item in data_genuine:
-    identifier = (item[3], item[4])
-    if identifier in common_identifiers and x_counts[identifier] > 0:
-        x_balanced.append(item)
-        x_counts[identifier] -= 1
-
-for item in data_spoofed:
-    identifier = (item[3], item[4])
-    if identifier in common_identifiers and y_counts[identifier] > 0:
-        y_balanced.append(item)
-        y_counts[identifier] -= 1
-
-for item in data_synthetic:
-    identifier = (item[3], item[4])
-    if identifier in common_identifiers and z_counts[identifier] > 0:
-        z_balanced.append(item)
-        z_counts[identifier] -= 1
-
-data_genuine = x_balanced[:270]
-data_spoofed = y_balanced[:270]
-data_synthetic = z_balanced[:270]
-
+if len(data_synthetic) < len(data_genuine):
+    data_genuine = data_genuine[:(len(data_synthetic))]
+    data_spoofed = data_spoofed[:(len(data_synthetic))]
 
 
 # -----------------------------------------------------------------------
@@ -453,49 +331,27 @@ loo = LeaveOneOut()
 pred_list = []
 
 # -----------------------------------------------------------------------
-# CALCULATE FEATURE VARIANCE
+# CALCULATE FEATURE ENTROPY
 # -----------------------------------------------------------------------
-variance_list40x40 = []
-
-#note: these patches divide in a x b sized patches
-for img in range(len(images)):
-    #variance with 40x40 patches
-    variances40x40 = calculate_patch_variances(images[img], 40, 40)
-    variance_list40x40.append([labels[img], variances40x40])
 
 k_knn = 3
 
-#correct_variance40x40_preds = 0
-gg_preds = 0
-gs_preds = 0
-sg_preds = 0
-ss_preds = 0
 
-correct_variance40x40_preds = 0
-
+correct_it_preds = 0
 
 for i, (train_index, test_index) in enumerate(loo.split(validation_images)):
     current_id = validation_id[test_index]
 
-    test_variance40x40 = [validation_labels[test_index][0],
-                          calculate_patch_variances(validation_images[test_index][0], 40, 40)]
-    variance40x40_distances = []
-
+    it_distance = []
     for j in range(len(labels)):
-        variance40x40_distances.append(
-            [variance_list40x40[j][0], mean_absolute_difference(variance_list40x40[j][1], test_variance40x40[1])])
+        it = intersection_test(histograms[j], validation_histograms[test_index])
+        it_distance.append([labels[j], it])
 
+    pred_it = knncalc(k_knn, it_distance)
+    if pred_it == 'genuine' and validation_labels[test_index][0] == 'genuine' or pred_it != 'genuine' and \
+            validation_labels[test_index][0] != 'genuine':
+        correct_it_preds += 1
     # prediction for current test image
-    pred = knncalc(k_knn, variance40x40_distances)
-    if pred == 'genuine' and test_variance40x40[0] == 'genuine': gg_preds += 1
-    if pred == 'genuine' and test_variance40x40[0] != 'genuine': gs_preds += 1
-    if pred != 'genuine' and test_variance40x40[0] == 'genuine': sg_preds += 1
-    if pred != 'genuine' and test_variance40x40[0] != 'genuine': ss_preds += 1
-
-    # prediction for current test image
-    if knncalc(k_knn, variance40x40_distances) == 'genuine' and test_variance40x40[0] == 'genuine' or knncalc(k_knn,
-                                                                                                              variance40x40_distances) != 'genuine' and \
-            test_variance40x40[0] != 'genuine': correct_variance40x40_preds += 1
 
 
 # -----------------------------------------------------------------------
@@ -504,41 +360,32 @@ for i, (train_index, test_index) in enumerate(loo.split(validation_images)):
 print(f'Leave One Out')
 total = len(validation_labels)
 print(f'Total number of samples: {str(total)}')
-print(f'Classification results \nVariances with knn {k_knn}')
+print(f'Classification results \nEntropies with knn {k_knn}')
 
-#print(f'Accuracy variance with 40x40 patches: {correct_variance40x40_preds / total * 100:.3f}%')
-print("gg" + str(gg_preds))
-print("gs" + str(gs_preds))
-print("sg" + str(sg_preds))
-print("ss" + str(ss_preds))
-
-print(f'Accuracy variance with 40x40 patches: {correct_variance40x40_preds / total * 100:.3f}%')
-
-
-
+print(f'Accuracy entropy with 50x50 patches: {correct_it_preds / total * 100:.3f}%')
 
 # -----------------------------------------------------------------------
 # LEAVE ONE SUBJECT OUT
 # -----------------------------------------------------------------------
-knn = 3
+knn = 5
 
-correct_variance40x40_preds = 0
+correct_entropy50x50_preds = 0
 
 for i, (train_index, test_index) in enumerate(loo.split(validation_images)):
     current_id = validation_id[test_index]
 
 
-    test_variance40x40 = [validation_labels[test_index][0],
-                          calculate_patch_variances(validation_images[test_index][0], 40, 40)]
-    variance40x40_distances = []
+    test_entropy50x50 = [validation_labels[test_index][0],
+                          calculate_patch_entropies(validation_images[test_index][0], 50, 50)]
+    entropy50x50_distances = []
 
     for j in range(len(labels)):
         if (current_id != id[j]):
-            variance40x40_distances.append([variance_list40x40[j][0], mean_absolute_difference(variance_list40x40[j][1], test_variance40x40[1])])
+            entropy50x50_distances.append([entropy_list50x50[j][0], mean_absolute_difference(entropy_list50x50[j][1], test_entropy50x50[1])])
 
     # prediction for current test image
-    if knncalc(k_knn, variance40x40_distances) == 'genuine' and test_variance40x40[0] == 'genuine' or knncalc(k_knn, variance40x40_distances) != 'genuine' and \
-            test_variance40x40[0] != 'genuine': correct_variance40x40_preds += 1
+    if knncalc(k_knn, entropy50x50_distances) == 'genuine' and test_entropy50x50[0] == 'genuine' or knncalc(k_knn, entropy50x50_distances) != 'genuine' and \
+            test_entropy50x50[0] != 'genuine': correct_entropy50x50_preds += 1
 
 # -----------------------------------------------------------------------
 # OUTPUT RESULTS
@@ -546,6 +393,6 @@ for i, (train_index, test_index) in enumerate(loo.split(validation_images)):
 print(f'Leave One Subject Out')
 total = len(validation_labels)
 print(f'Total number of samples: {str(total)}')
-print(f'Classification results \nVariances with knn {k_knn}')
+print(f'Classification results \nEntropies with knn {k_knn}')
 
-print(f'Accuracy variance with 40x40 patches: {correct_variance40x40_preds / total * 100:.3f}%')
+print(f'Accuracy entropy with 50x50 patches: {correct_entropy50x50_preds / total * 100:.3f}%')
